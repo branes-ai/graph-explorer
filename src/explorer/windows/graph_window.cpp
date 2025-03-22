@@ -7,7 +7,6 @@
 #include "explorer_context.hpp"
 #include "explorer_log.hpp"
 
-#include "erhe_commands/commands.hpp"
 #include "erhe_defer/defer.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
@@ -207,18 +206,11 @@ Graph_window::Graph_window(
 )
     : erhe::imgui::Imgui_window{imgui_renderer, imgui_windows, "Graph", "graph"}
     , m_context                {explorer_context}
-    , m_create_project_command {commands, "File.Create Project", [this]() -> bool { create_project(); return true; } }
 {
-    commands.register_command(&m_create_project_command);
-
-    commands.bind_command_to_menu(&m_create_project_command, "File. Create Project");
+    static_cast<void>(commands); // TODO Keeping in case we need to add commands here
 }
 
 Graph_window::~Graph_window() noexcept
-{
-}
-
-void Graph_window::create_project()
 {
 }
 

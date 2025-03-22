@@ -195,8 +195,6 @@ public:
     void imgui() override;
     auto flags() -> ImGuiWindowFlags override;
 
-    void create_project();
-
     [[nodiscard]] auto make_unary_source() -> Node*;
     [[nodiscard]] auto make_unary_sink  () -> Node*;
     [[nodiscard]] auto make_add         () -> Node*;
@@ -208,8 +206,6 @@ private:
     Explorer_context&                              m_context;
     Graph                                          m_graph;
     std::unique_ptr<ax::NodeEditor::EditorContext> m_node_editor;
-
-    erhe::commands::Lambda_command m_create_project_command;
 
     std::vector<std::unique_ptr<Node>> m_nodes;
 };

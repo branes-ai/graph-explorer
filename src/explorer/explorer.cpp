@@ -582,7 +582,7 @@ public:
             auto some_windows_task = taskflow.emplace([this]()
             {
                 m_operation_stack        = std::make_unique<Operation_stack                 >(*m_executor.get(),       *m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(), m_explorer_context);
-                m_project_explorer       = std::make_unique<Project_explorer                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_project_explorer       = std::make_unique<Project_explorer                >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_composer_window        = std::make_unique<Composer_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_selection_window       = std::make_unique<Selection_window                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_settings_window        = std::make_unique<Settings_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
