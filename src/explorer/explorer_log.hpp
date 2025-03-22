@@ -6,7 +6,7 @@
 
 namespace explorer {
 
-extern std::shared_ptr<spdlog::logger> log_asset_browser;
+extern std::shared_ptr<spdlog::logger> log_project_explorer;
 extern std::shared_ptr<spdlog::logger> log_brush;
 extern std::shared_ptr<spdlog::logger> log_composer;
 extern std::shared_ptr<spdlog::logger> log_controller_ray;

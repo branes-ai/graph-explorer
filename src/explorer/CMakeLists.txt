@@ -156,8 +156,6 @@ erhe_target_sources_grouped(
     res/shaders/wide_lines.geom
     res/shaders/wide_lines.vert
 
-    scene/asset_browser.cpp
-    scene/asset_browser.hpp
     scene/brush_placement.cpp
     scene/brush_placement.hpp
     scene/content_library.cpp
@@ -287,6 +285,8 @@ erhe_target_sources_grouped(
     windows/physics_window.hpp
     windows/post_processing_window.cpp
     windows/post_processing_window.hpp
+    windows/project_explorer.cpp
+    windows/project_explorer.hpp
     windows/property_editor.cpp
     windows/property_editor.hpp
     windows/properties.cpp

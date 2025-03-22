@@ -18,7 +18,6 @@
 #include "renderers/programs.hpp"
 #include "rendergraph/post_processing.hpp"
 #include "rendertarget_imgui_host.hpp"
-#include "scene/asset_browser.hpp"
 #include "scene/debug_draw.hpp"
 #include "scene/material_preview.hpp"
 #include "scene/scene_builder.hpp"
@@ -41,6 +40,7 @@
 #include "windows/operations.hpp"
 #include "windows/physics_window.hpp"
 #include "windows/post_processing_window.hpp"
+#include "windows/project_explorer.hpp"
 #include "windows/properties.hpp"
 #include "windows/graph_window.hpp"
 #include "windows/selection_window.hpp"
@@ -582,7 +582,7 @@ public:
             auto some_windows_task = taskflow.emplace([this]()
             {
                 m_operation_stack        = std::make_unique<Operation_stack                 >(*m_executor.get(),       *m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(), m_explorer_context);
-                m_asset_browser          = std::make_unique<Asset_browser                   >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_project_explorer       = std::make_unique<Project_explorer                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_composer_window        = std::make_unique<Composer_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_selection_window       = std::make_unique<Selection_window                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_settings_window        = std::make_unique<Settings_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
@@ -1109,7 +1109,7 @@ public:
     std::unique_ptr<Explorer_scenes           >              m_explorer_scenes;
     std::unique_ptr<Explorer_windows          >              m_explorer_windows;
 
-    std::unique_ptr<Asset_browser                   >        m_asset_browser;
+    std::unique_ptr<Project_explorer                >        m_project_explorer;
     std::unique_ptr<Icon_set                        >        m_icon_set;
     std::unique_ptr<Post_processing                 >        m_post_processing;
     std::unique_ptr<Id_renderer                     >        m_id_renderer;

@@ -3,7 +3,7 @@
 
 namespace explorer {
 
-std::shared_ptr<spdlog::logger> log_asset_browser;
+std::shared_ptr<spdlog::logger> log_project_explorer;
 std::shared_ptr<spdlog::logger> log_brush;
 std::shared_ptr<spdlog::logger> log_composer;
 std::shared_ptr<spdlog::logger> log_controller_ray;
@@ -47,7 +47,7 @@ std::shared_ptr<spdlog::logger> log_graph_window;
 void initialize_logging()
 {
     using namespace erhe::log;
-    log_asset_browser              = make_logger      ("explorer.asset_browser"             );
+    log_project_explorer           = make_logger      ("explorer.project_explorer"          );
     log_startup                    = make_logger      ("explorer.startup"                   );
     log_brush                      = make_logger      ("explorer.brush"                     );
     log_composer                   = make_frame_logger("explorer.composer"                  );
