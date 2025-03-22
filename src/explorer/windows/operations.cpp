@@ -37,8 +37,8 @@ Operations::Operations(
     erhe::commands::Commands&    commands,
     erhe::imgui::Imgui_renderer& imgui_renderer,
     erhe::imgui::Imgui_windows&  imgui_windows,
-    Explorer_context&              explorer_context,
-    Explorer_message_bus&          explorer_message_bus
+    Explorer_context&            explorer_context,
+    Explorer_message_bus&        explorer_message_bus
 )
     : Imgui_window            {imgui_renderer, imgui_windows, "Operations", "operations"}
     , m_context               {explorer_context}

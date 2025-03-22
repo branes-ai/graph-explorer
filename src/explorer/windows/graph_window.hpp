@@ -1,5 +1,6 @@
 #pragma once
 
+#include "erhe_commands/command.hpp"
 #include "erhe_imgui/imgui_window.hpp"
 #include "erhe_imgui/imgui_node_editor.h"
 
@@ -10,6 +11,10 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+namespace erhe::commands {
+    class Commands;
+}
 
 namespace erhe::imgui {
     class Imgui_windows;
@@ -178,12 +183,19 @@ public:
 class Graph_window : public erhe::imgui::Imgui_window
 {
 public:
-    Graph_window(erhe::imgui::Imgui_renderer& imgui_renderer, erhe::imgui::Imgui_windows& imgui_windows, Explorer_context& explorer_context);
+    Graph_window(
+        erhe::commands::Commands&    commands,
+        erhe::imgui::Imgui_renderer& imgui_renderer,
+        erhe::imgui::Imgui_windows&  imgui_windows,
+        Explorer_context&            explorer_context
+    );
     ~Graph_window() noexcept override;
 
     // Implements Imgui_window
     void imgui() override;
     auto flags() -> ImGuiWindowFlags override;
+
+    void create_project();
 
     [[nodiscard]] auto make_unary_source() -> Node*;
     [[nodiscard]] auto make_unary_sink  () -> Node*;
@@ -196,6 +208,8 @@ private:
     Explorer_context&                              m_context;
     Graph                                          m_graph;
     std::unique_ptr<ax::NodeEditor::EditorContext> m_node_editor;
+
+    erhe::commands::Lambda_command m_create_project_command;
 
     std::vector<std::unique_ptr<Node>> m_nodes;
 };

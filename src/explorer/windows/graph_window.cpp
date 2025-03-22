@@ -7,6 +7,7 @@
 #include "explorer_context.hpp"
 #include "explorer_log.hpp"
 
+#include "erhe_commands/commands.hpp"
 #include "erhe_defer/defer.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
@@ -198,13 +199,26 @@ void Graph::sort()
     std::swap(m_nodes, sorted_nodes);
 }
 
-Graph_window::Graph_window(erhe::imgui::Imgui_renderer& imgui_renderer, erhe::imgui::Imgui_windows& imgui_windows, Explorer_context& explorer_context)
+Graph_window::Graph_window(
+    erhe::commands::Commands&    commands,
+    erhe::imgui::Imgui_renderer& imgui_renderer,
+    erhe::imgui::Imgui_windows&  imgui_windows,
+    Explorer_context&            explorer_context
+)
     : erhe::imgui::Imgui_window{imgui_renderer, imgui_windows, "Graph", "graph"}
     , m_context                {explorer_context}
+    , m_create_project_command {commands, "File.Create Project", [this]() -> bool { create_project(); return true; } }
 {
+    commands.register_command(&m_create_project_command);
+
+    commands.bind_command_to_menu(&m_create_project_command, "File. Create Project");
 }
 
 Graph_window::~Graph_window() noexcept
+{
+}
+
+void Graph_window::create_project()
 {
 }
 
