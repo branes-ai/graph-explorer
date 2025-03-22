@@ -275,6 +275,8 @@ erhe_target_sources_grouped(
     windows/imgui_window_scene_view_node.hpp
     windows/item_tree_window.cpp
     windows/item_tree_window.hpp
+    windows/graph_window.cpp
+    windows/graph_window.hpp
     windows/layers_window.cpp
     windows/layers_window.hpp
     windows/network_window.cpp
@@ -285,6 +287,8 @@ erhe_target_sources_grouped(
     windows/physics_window.hpp
     windows/post_processing_window.cpp
     windows/post_processing_window.hpp
+    windows/property_editor.cpp
+    windows/property_editor.hpp
     windows/properties.cpp
     windows/properties.hpp
     windows/rendergraph_window.cpp

@@ -18,8 +18,8 @@ namespace erhe::renderer {
 
 namespace explorer {
 
-class Editor_context;
-class Editor_rendering;
+class Explorer_context;
+class Explorer_rendering;
 class Headset_view;
 
 enum class Hand_name : unsigned int {
@@ -93,7 +93,7 @@ private:
 class Hand_tracker : public Renderable
 {
 public:
-    Hand_tracker(Editor_context& explorer_context, Editor_rendering& explorer_rendering);
+    Hand_tracker(Explorer_context& explorer_context, Explorer_rendering& explorer_rendering);
     ~Hand_tracker() noexcept override;
 
     // Implements Renderable
@@ -106,7 +106,7 @@ public:
     void set_color(Hand_name hand_name, std::size_t finger_name, ImVec4 color);
 
 private:
-    Editor_context& m_context;
+    Explorer_context& m_context;
 
     Hand m_left_hand;
     Hand m_right_hand;

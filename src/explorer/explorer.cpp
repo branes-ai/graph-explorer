@@ -42,7 +42,7 @@
 #include "windows/physics_window.hpp"
 #include "windows/post_processing_window.hpp"
 #include "windows/properties.hpp"
-#include "windows/rendergraph_window.hpp"
+#include "windows/graph_window.hpp"
 #include "windows/selection_window.hpp"
 #include "windows/settings_window.hpp"
 #include "windows/tool_properties_window.hpp"
@@ -461,13 +461,13 @@ public:
                 }
             };
 
-            m_clipboard            = std::make_unique<Clipboard     >(commands, m_explorer_context);
-            m_explorer_scenes        = std::make_unique<Explorer_scenes >(m_explorer_context);
-            m_explorer_windows       = std::make_unique<Explorer_windows>(m_explorer_context, commands);
-            m_viewport_scene_views = std::make_unique<Scene_views   >(commands, m_explorer_context, explorer_message_bus);
-            m_selection            = std::make_unique<Selection     >(commands, m_explorer_context, explorer_message_bus);
-            m_scene_commands       = std::make_unique<Scene_commands>(commands, m_explorer_context);
-            m_debug_draw           = std::make_unique<Debug_draw    >(m_explorer_context);
+            m_clipboard            = std::make_unique<Clipboard       >(commands, m_explorer_context, explorer_message_bus);
+            m_explorer_scenes      = std::make_unique<Explorer_scenes >(m_explorer_context);
+            m_explorer_windows     = std::make_unique<Explorer_windows>(m_explorer_context, commands);
+            m_viewport_scene_views = std::make_unique<Scene_views     >(commands, m_explorer_context, explorer_message_bus);
+            m_selection            = std::make_unique<Selection       >(commands, m_explorer_context, explorer_message_bus);
+            m_scene_commands       = std::make_unique<Scene_commands  >(commands, m_explorer_context);
+            m_debug_draw           = std::make_unique<Debug_draw      >(m_explorer_context);
             m_program_interface    = std::make_unique<erhe::scene_renderer::Program_interface>(*m_graphics_instance.get(), m_vertex_format);
             m_programs             = std::make_unique<Programs>(*m_graphics_instance.get());
 
@@ -594,7 +594,7 @@ public:
                 m_physics_window         = std::make_unique<Physics_window                  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_post_processing_window = std::make_unique<Post_processing_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_properties             = std::make_unique<Properties                      >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_rendergraph_window     = std::make_unique<Rendergraph_window              >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_graph_window           = std::make_unique<Graph_window                    >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_tool_properties_window = std::make_unique<Tool_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_viewport_config_window = std::make_unique<Viewport_config_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_logs                   = std::make_unique<erhe::imgui::Logs               >(*m_commands.get(),       *m_imgui_renderer.get());
@@ -917,7 +917,7 @@ public:
             m_layers_window         ->set_developer();
             m_network_window        ->set_developer();
             m_post_processing_window->set_developer();
-            m_rendergraph_window    ->set_developer();
+            m_graph_window          ->set_developer();
             m_selection_window      ->set_developer();
             m_tail_log_window       ->set_developer();
             m_operation_stack       ->set_developer();
@@ -1129,7 +1129,7 @@ public:
     std::unique_ptr<Physics_window                  >        m_physics_window;
     std::unique_ptr<Post_processing_window          >        m_post_processing_window;
     std::unique_ptr<Properties                      >        m_properties;
-    std::unique_ptr<Rendergraph_window              >        m_rendergraph_window;
+    std::unique_ptr<Graph_window                    >        m_graph_window;
     std::unique_ptr<Tool_properties_window          >        m_tool_properties_window;
     std::unique_ptr<Viewport_config_window          >        m_viewport_config_window;
     std::unique_ptr<erhe::imgui::Logs               >        m_logs;

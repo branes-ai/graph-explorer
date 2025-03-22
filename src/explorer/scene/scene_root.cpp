@@ -331,6 +331,16 @@ auto Scene_root::make_browser_window(
             return ImGui::IsDragDropActive() && m_node_tree_window->drag_and_drop_target(item);
         }
     );
+    m_node_tree_window->set_hover_callback(
+        [this, &context]() {
+            context.explorer_message_bus->send_message(
+                Explorer_message{
+                    .update_flags = Message_flag_bit::c_flag_bit_hover_scene_item_tree,
+                    .scene_root   = this
+                }
+            );
+        }
+    );
     return m_node_tree_window;
 }
 
