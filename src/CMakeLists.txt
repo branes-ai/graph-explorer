@@ -31,6 +31,10 @@ if (${ERHE_GUI_LIBRARY} STREQUAL "imgui")
     add_subdirectory(editor)
 endif ()    
 
+if (${ERHE_GUI_LIBRARY} STREQUAL "imgui")
+    add_subdirectory(explorer)
+endif ()    
+
 add_subdirectory(example)
 
 if (${ERHE_GUI_LIBRARY} STREQUAL "imgui")
