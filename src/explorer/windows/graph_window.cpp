@@ -84,16 +84,20 @@ void Graph::unregister_node(Node* node)
     }
 
     std::vector<Pin>& input_pins = node->get_input_pins();
+    std::vector<Link*> links_to_delete;
     for (Pin& pin : input_pins) {
         for (Link* link : pin.get_links()) {
-            disconnect(link);
+            links_to_delete.push_back(link);
         }
     }
     std::vector<Pin>& output_pins = node->get_output_pins();
     for (Pin& pin : output_pins) {
         for (Link* link : pin.get_links()) {
-            disconnect(link);
+            links_to_delete.push_back(link);
         }
+    }
+    for (Link* link : links_to_delete) {
+        disconnect(link);
     }
 
     m_nodes.erase(i);
