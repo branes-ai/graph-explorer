@@ -340,7 +340,7 @@ public:
             .width             = 1920,
             .height            = 1080,
             .msaa_sample_count = m_explorer_context.OpenXR_mirror ? 0 : 0,
-            .title             = erhe::window::format_window_title("erhe editor by Timo Suoranta")
+            .title             = erhe::window::format_window_title("DNN Model Explorer")
         };
 
         window_section.get("show",             configuration.show);
