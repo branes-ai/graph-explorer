@@ -6,7 +6,11 @@
 
 #include "explorer_context.hpp"
 #include "explorer_log.hpp"
+#include "explorer_message_bus.hpp"
+#include "project_explorer.hpp"
+#include "tools/selection_tool.hpp"
 
+#include "erhe_bit/bit_helpers.hpp"
 #include "erhe_defer/defer.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
@@ -63,12 +67,13 @@ void Graph::register_node(Node* node)
 #if !defined(NDEBUG)
     const auto i = std::find_if(m_nodes.begin(), m_nodes.end(), [node](Node* entry) { return entry == node; });
     if (i != m_nodes.end()) {
-        log_graph_window->error("Node {} {} is already registered to Graph", node->get_name(), node->get_id());
+        log_graph->error("Node {} {} is already registered to Graph", node->get_name(), node->get_id());
         return;
     }
 #endif
     m_nodes.push_back(node);
-    log_graph_window->trace("Registered Node {} {}", node->get_name(), node->get_id());
+    m_is_sorted = false;
+    log_graph->trace("Registered Node {} {}", node->get_name(), node->get_id());
 }
 
 void Graph::unregister_node(Node* node)
@@ -79,7 +84,7 @@ void Graph::unregister_node(Node* node)
 
     const auto i = std::find_if(m_nodes.begin(), m_nodes.end(), [node](Node* entry) { return entry == node; });
     if (i == m_nodes.end()) {
-        log_graph_window->error("Graph::unregister_node(): Node {} {} is not registered", node->get_name(), node->get_id());
+        log_graph->error("Graph::unregister_node(): Node {} {} is not registered", node->get_name(), node->get_id());
         return;
     }
 
@@ -102,7 +107,8 @@ void Graph::unregister_node(Node* node)
 
     m_nodes.erase(i);
 
-    log_graph_window->trace("Unregistered Node {} {}", node->get_name(), node->get_id());
+    m_is_sorted = false;
+    log_graph->trace("Unregistered Node {} {}", node->get_name(), node->get_id());
 }
 
 auto Graph::connect(Pin* source_pin, Pin* sink_pin) -> Link*
@@ -111,7 +117,7 @@ auto Graph::connect(Pin* source_pin, Pin* sink_pin) -> Link*
     ERHE_VERIFY(sink_pin != nullptr);
 
     if (sink_pin->get_key() != source_pin->get_key()) {
-        log_graph_window->warn("Sink pin key {} does not match source pin key {}", sink_pin->get_key(), source_pin->get_key());
+        log_graph->warn("Sink pin key {} does not match source pin key {}", sink_pin->get_key(), source_pin->get_key());
         return nullptr;
     }
     m_links.push_back(std::make_unique<Link>(source_pin, sink_pin));
@@ -119,7 +125,8 @@ auto Graph::connect(Pin* source_pin, Pin* sink_pin) -> Link*
     sink_pin  ->add_link(link);
     source_pin->add_link(link);
 
-    log_graph_window->trace("Connected {} {} to {} {} ", source_pin->get_name(), source_pin->get_id(), sink_pin->get_name(), sink_pin->get_id());
+    log_graph->trace("Connected {} {} to {} {} ", source_pin->get_name(), source_pin->get_id(), sink_pin->get_name(), sink_pin->get_id());
+    m_is_sorted = false;
     return link;
 }
 
@@ -129,11 +136,12 @@ void Graph::disconnect(Link* link)
 
     auto i = std::find_if(m_links.begin(), m_links.end(), [link](const std::unique_ptr<Link>& entry){ return link == entry.get(); });
     if (i == m_links.end()) {
-        log_graph_window->error("Link not found");
+        log_graph->error("Link not found");
         return;
     }
     link->disconnect();
     m_links.erase(i);
+    m_is_sorted = false;
 }
 
 void Graph::evaluate()
@@ -146,6 +154,10 @@ void Graph::evaluate()
 
 void Graph::sort()
 {
+    if (m_is_sorted) {
+        return;
+    }
+
     std::vector<Node*> unsorted_nodes = m_nodes;
     std::vector<Node*> sorted_nodes;
 
@@ -184,7 +196,7 @@ void Graph::sort()
             // Remove from unsorted nodes
             const auto i = std::remove(unsorted_nodes.begin(), unsorted_nodes.end(), node);
             if (i == unsorted_nodes.end()) {
-                log_graph_window->error("Sort: Node {} {} is not in graph nodes", node->get_name(), node->get_id());
+                log_graph->error("Sort: Node {} {} is not in graph nodes", node->get_name(), node->get_id());
             } else {
                 unsorted_nodes.erase(i, unsorted_nodes.end());
             }
@@ -194,28 +206,45 @@ void Graph::sort()
         }
 
         if (!found_node) {
-            log_graph_window->error("No node with met dependencies found. Graph is not acyclic:");
+            log_graph->error("No node with met dependencies found. Graph is not acyclic:");
             return;
         }
     }
 
     std::swap(m_nodes, sorted_nodes);
+    m_is_sorted = true;
 }
 
 Graph_window::Graph_window(
     erhe::commands::Commands&    commands,
     erhe::imgui::Imgui_renderer& imgui_renderer,
     erhe::imgui::Imgui_windows&  imgui_windows,
-    Explorer_context&            explorer_context
+    Explorer_context&            explorer_context,
+    Explorer_message_bus&        explorer_message_bus
 )
     : erhe::imgui::Imgui_window{imgui_renderer, imgui_windows, "Graph", "graph"}
     , m_context                {explorer_context}
 {
     static_cast<void>(commands); // TODO Keeping in case we need to add commands here
+
+    explorer_message_bus.add_receiver(
+        [&](Explorer_message& message) {
+            on_message(message);
+        }
+    );
 }
 
 Graph_window::~Graph_window() noexcept
 {
+}
+
+void Graph_window::on_message(Explorer_message& message)
+{
+    using namespace erhe::bit;
+    if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_selection)) {
+        std::shared_ptr<Project_file_other> select_file = m_context.selection->get<Project_file_other>();
+        log_graph->info("Selection changed: {}", select_file ? select_file->describe() : std::string{});
+    }
 }
 
 auto Graph_window::flags() -> ImGuiWindowFlags
@@ -402,7 +431,7 @@ void Graph_window::imgui()
     m_node_editor->Begin("Graph", ImVec2{0.0f, 0.0f});
 
     for (Node* node : m_graph.get_nodes()) {
-        log_graph_window->info("Node {} {}", node->get_name(), node->get_id());
+        log_graph_frame->info("Node {} {}", node->get_name(), node->get_id());
 
         ImGui::PushID(static_cast<int>(node->get_id()));
         ERHE_DEFER( ImGui::PopID(); );
@@ -416,7 +445,7 @@ void Graph_window::imgui()
         ImGui::TableSetupColumn("InputPin",   ImGuiTableColumnFlags_WidthFixed, 20.0f);
         ImGui::TableSetupColumn("InputLabel", ImGuiTableColumnFlags_None);
         for (const Pin& pin : node->get_input_pins()) {
-            log_graph_window->info("  Input Pin {} {}", pin.get_name(), pin.get_id());
+            log_graph_frame->info("  Input Pin {} {}", pin.get_name(), pin.get_id());
             ImGui::TableNextRow();
             
             ImGui::TableSetColumnIndex(0);
@@ -441,7 +470,7 @@ void Graph_window::imgui()
         ImGui::TableSetupColumn("OutputLabel", ImGuiTableColumnFlags_None);
         ImGui::TableSetupColumn("OutputPin",   ImGuiTableColumnFlags_WidthFixed, 20.0f);
         for (const Pin& pin : node->get_output_pins()) {
-            log_graph_window->info("  Output Pin {} {}", pin.get_name(), pin.get_id());
+            log_graph_frame->info("  Output Pin {} {}", pin.get_name(), pin.get_id());
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             const char* label = pin.get_name().data();
@@ -463,7 +492,7 @@ void Graph_window::imgui()
 
     // Links
     for (const std::unique_ptr<Link>& link : m_graph.get_links()) {
-        log_graph_window->info(
+        log_graph_frame->info(
             "  Link source {} {} sink {} {}",
             link->get_source()->get_name(), link->get_source()->get_id(),
             link->get_sink()->get_name(), link->get_sink()->get_id()

@@ -26,6 +26,8 @@ namespace ax::NodeEditor {
 namespace explorer {
 
 class Explorer_context;
+class Explorer_message;
+class Explorer_message_bus;
 
 class Node;
 class Pin;
@@ -176,8 +178,9 @@ public:
     [[nodiscard]] auto get_nodes()       -> std::vector<Node*>&                 { return m_nodes; }
     [[nodiscard]] auto get_links()       -> std::vector<std::unique_ptr<Link>>& { return m_links; }
 
-    std::vector<Node*> m_nodes;
+    std::vector<Node*>                 m_nodes;
     std::vector<std::unique_ptr<Link>> m_links;
+    bool                               m_is_sorted{false};
 };
 
 class Graph_window : public erhe::imgui::Imgui_window
@@ -187,7 +190,8 @@ public:
         erhe::commands::Commands&    commands,
         erhe::imgui::Imgui_renderer& imgui_renderer,
         erhe::imgui::Imgui_windows&  imgui_windows,
-        Explorer_context&            explorer_context
+        Explorer_context&            explorer_context,
+        Explorer_message_bus&        explorer_message_bus
     );
     ~Graph_window() noexcept override;
 
@@ -203,6 +207,8 @@ public:
     [[nodiscard]] auto make_div         () -> Node*;
 
 private:
+    void on_message(Explorer_message& message);
+
     Explorer_context&                              m_context;
     Graph                                          m_graph;
     std::unique_ptr<ax::NodeEditor::EditorContext> m_node_editor;
