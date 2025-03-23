@@ -30,7 +30,7 @@ namespace explorer {
 
 using Light_type = erhe::scene::Light_type;
 
-Item_tree::Item_tree(Explorer_context& context, const std::shared_ptr<erhe::Hierarchy>& root)
+Item_tree::Item_tree(Explorer_context& context)
     : m_context{context}
     , m_filter{
         .require_all_bits_set           = erhe::Item_flags::show_in_ui,
@@ -38,8 +38,12 @@ Item_tree::Item_tree(Explorer_context& context, const std::shared_ptr<erhe::Hier
         .require_all_bits_clear         = 0, //erhe::Item_flags::tool | erhe::Item_flags::brush,
         .require_at_least_one_bit_clear = 0
     }
-    , m_root{root}
 {
+}
+
+void Item_tree::set_root(const std::shared_ptr<erhe::Hierarchy>& root)
+{
+    m_root = root;
 }
 
 void Item_tree::set_item_filter(const erhe::Item_filter& filter)
@@ -1213,15 +1217,14 @@ void Item_tree::imgui_tree(float ui_scale)
 ////////////////////////////
 
 Item_tree_window::Item_tree_window(
-    erhe::imgui::Imgui_renderer&            imgui_renderer,
-    erhe::imgui::Imgui_windows&             imgui_windows,
-    Explorer_context&                         context,
-    const std::string_view                  window_title,
-    const std::string_view                  ini_label,
-    const std::shared_ptr<erhe::Hierarchy>& root
+    erhe::imgui::Imgui_renderer& imgui_renderer,
+    erhe::imgui::Imgui_windows&  imgui_windows,
+    Explorer_context&            context,
+    const std::string_view       window_title,
+    const std::string_view       ini_label
 )
     : erhe::imgui::Imgui_window{imgui_renderer, imgui_windows, window_title, ini_label}
-    , Item_tree{context, root}
+    , Item_tree{context}
 {
 }
 

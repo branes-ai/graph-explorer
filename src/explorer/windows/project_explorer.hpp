@@ -5,6 +5,7 @@
 
 #include "erhe_imgui/imgui_window.hpp"
 #include "erhe_item/hierarchy.hpp"
+#include "erhe_window/window.hpp"
 
 #include <glm/glm.hpp>
 
@@ -67,19 +68,19 @@ class Project_explorer_window : public Item_tree_window
 {
 public:
     Project_explorer_window(
-        Project_explorer&                       Project_explorer,
-        erhe::imgui::Imgui_renderer&            imgui_renderer,
-        erhe::imgui::Imgui_windows&             imgui_windows,
-        Explorer_context&                       context,
-        const std::string_view                  window_title,
-        const std::string_view                  ini_label,
-        const std::shared_ptr<erhe::Hierarchy>& root
+        Project_explorer&            Project_explorer,
+        erhe::imgui::Imgui_renderer& imgui_renderer,
+        erhe::imgui::Imgui_windows&  imgui_windows,
+        Explorer_context&            context,
+        const std::string_view       window_title,
+        const std::string_view       ini_label
     );
 
     void imgui() override;
 
 private:
     Project_explorer& m_project_explorer;
+    Explorer_context& m_explorer_context;
 };
 
 class Project_explorer
@@ -94,21 +95,24 @@ public:
 
     void create_project();
 
-    void scan();
+    void scan    ();
+    void set_path(std::filesystem::path path);
+    [[nodiscard]] auto get_path() const -> std::filesystem::path;
 
 private:
-    void scan(const std::filesystem::path& path, Project_node* parent);
+    void scan(const std::filesystem::path& path, const std::shared_ptr<Project_node>& parent);
 
-    auto make_node    (const std::filesystem::path& path, Project_node* parent) -> std::shared_ptr<Project_node>;
+    auto make_node    (const std::filesystem::path& path, const std::shared_ptr<Project_node>& parent) -> std::shared_ptr<Project_node>;
     auto item_callback(const std::shared_ptr<erhe::Item_base>& item) -> bool;
 
-    Explorer_context& m_context;
-    Project_node*     m_popup_node{nullptr};
-
-    erhe::commands::Lambda_command m_create_project_command;
+    std::filesystem::path                    m_root_path;
+    Explorer_context&                        m_context;
+    erhe::commands::Lambda_command           m_create_project_command;
 
     std::shared_ptr<Project_node>            m_root;
     std::shared_ptr<Project_explorer_window> m_node_tree_window;
+
+    Project_node*                            m_popup_node{nullptr};
 };
 
 } // namespace explorer

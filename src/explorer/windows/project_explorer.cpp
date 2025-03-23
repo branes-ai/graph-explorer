@@ -17,6 +17,10 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
+#if defined(ERHE_WINDOW_LIBRARY_SDL)
+# include <SDL3/SDL_dialog.h>
+#endif
+
 namespace explorer {
 
 
@@ -48,7 +52,7 @@ Project_file_other& Project_file_other::operator=(const Project_file_other&) = d
 Project_file_other::~Project_file_other() noexcept                         = default;
 Project_file_other::Project_file_other(const std::filesystem::path& path) : Item{path} {}
 
-auto Project_explorer::make_node(const std::filesystem::path& path, Project_node* const parent) -> std::shared_ptr<Project_node>
+auto Project_explorer::make_node(const std::filesystem::path& path, const std::shared_ptr<Project_node>& parent) -> std::shared_ptr<Project_node>
 {
     std::error_code error_code;
     bool is_directory{false};
@@ -73,21 +77,55 @@ auto Project_explorer::make_node(const std::filesystem::path& path, Project_node
 }
 
 Project_explorer_window::Project_explorer_window(
-    Project_explorer&                       project_explorer,
-    erhe::imgui::Imgui_renderer&            imgui_renderer,
-    erhe::imgui::Imgui_windows&             imgui_windows,
-    Explorer_context&                       context,
-    const std::string_view                  window_title,
-    const std::string_view                  ini_label,
-    const std::shared_ptr<erhe::Hierarchy>& root
+    Project_explorer&            project_explorer,
+    erhe::imgui::Imgui_renderer& imgui_renderer,
+    erhe::imgui::Imgui_windows&  imgui_windows,
+    Explorer_context&            context,
+    const std::string_view       window_title,
+    const std::string_view       ini_label
 )
-    : Item_tree_window  {imgui_renderer, imgui_windows, context, window_title, ini_label, root}
+    : Item_tree_window  {imgui_renderer, imgui_windows, context, window_title, ini_label}
     , m_project_explorer{project_explorer}
+    , m_explorer_context{context}
 {
 }
 
+#if defined(ERHE_WINDOW_LIBRARY_SDL)
+static void s_select_folder_callback(void* userdata, const char* const* filelist, int filter)
+{
+    static_cast<void>(filter);
+    if (userdata == nullptr) {
+        return;
+    }
+    Project_explorer* project_explorer = static_cast<Project_explorer*>(userdata);
+    if (filelist == nullptr) {
+        return; // error TODO SDL_GetError();
+    }
+    if (*filelist == nullptr) {
+        return; // canceled / nothing selected
+    }
+    project_explorer->set_path(*filelist);
+    project_explorer->scan();
+}
+#endif
+
 void Project_explorer_window::imgui()
 {
+#if defined(ERHE_WINDOW_LIBRARY_SDL)
+    if (ImGui::Button("Select Folder:")) {
+        SDL_Window* window = static_cast<SDL_Window*>(m_explorer_context.context_window->get_sdl_window());
+        SDL_ShowOpenFolderDialog(s_select_folder_callback, &m_project_explorer, window, nullptr, false);
+    }
+    ImGui::SameLine();
+    ImGui::InvisibleButton("##space", ImVec2{5.0f, 5.0f});
+    ImGui::SameLine();
+    std::string path;
+    try {
+        path = m_project_explorer.get_path().string();
+    } catch (...) {
+    }
+    ImGui::TextUnformatted(path.c_str());
+#endif
     if (ImGui::Button("Scan")) {
         m_project_explorer.scan();
     }
@@ -102,8 +140,10 @@ Project_explorer::Project_explorer(
 )
     : m_context               {explorer_context}
     , m_create_project_command{commands, "File.Create Project", [this]() -> bool { create_project(); return true; } }
+    , m_root_path             {std::filesystem::path("projects")}
 {
     ERHE_PROFILE_FUNCTION();
+
     scan();
 
     m_node_tree_window = std::make_shared<Project_explorer_window>(
@@ -112,8 +152,7 @@ Project_explorer::Project_explorer(
         imgui_windows, 
         explorer_context,
         "Project Explorer",
-        "project_explorer",
-        m_root
+        "project_explorer"
     );
     m_node_tree_window->set_item_filter(
         erhe::Item_filter{
@@ -128,6 +167,7 @@ Project_explorer::Project_explorer(
             return item_callback(item);
         }
     );
+    m_node_tree_window->set_root(m_root);
 
     commands.register_command(&m_create_project_command);
 
@@ -139,7 +179,7 @@ void Project_explorer::create_project()
     // TODO
 }
 
-void Project_explorer::scan(const std::filesystem::path& path, Project_node* parent)
+void Project_explorer::scan(const std::filesystem::path& path, const std::shared_ptr<Project_node>& parent)
 {
     log_project_explorer->trace("Scanning {}", erhe::file::to_string(path));
 
@@ -178,19 +218,29 @@ void Project_explorer::scan(const std::filesystem::path& path, Project_node* par
             continue;
         }
 
-        auto project_node = make_node(entry, parent);
+        std::shared_ptr<Project_node> project_node = make_node(entry, parent);
         if (is_directory) {
-            scan(entry, project_node.get());
+            scan(entry, project_node);
         }
     }
 }
 
+void Project_explorer::set_path(std::filesystem::path path)
+{
+    m_root_path = path;
+    scan();
+    m_node_tree_window->set_root(m_root);
+}
+
+auto Project_explorer::get_path() const -> std::filesystem::path
+{
+    return m_root_path;
+}
+
 void Project_explorer::scan()
 {
-    std::filesystem::path root_path = std::filesystem::path("projects");
-
-    m_root = make_node(root_path, nullptr);
-    scan(root_path, m_root.get());
+    m_root = make_node(m_root_path, nullptr);
+    scan(m_root_path, m_root);
 }
 
 auto Project_explorer::item_callback(const std::shared_ptr<erhe::Item_base>& item) -> bool
