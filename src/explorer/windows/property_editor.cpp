@@ -5,6 +5,11 @@
 
 namespace explorer {
 
+void Property_editor::reset_row()
+{
+    m_row = 0;
+}
+
 void Property_editor::reset()
 {
     m_entries.clear();
