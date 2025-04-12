@@ -11,6 +11,7 @@
 #include "input_state.hpp"
 #include "time.hpp"
 
+#include "graph/graph_window.hpp"
 #include "graphics/icon_set.hpp"
 #include "operations/operation_stack.hpp"
 #include "renderers/id_renderer.hpp"
@@ -42,7 +43,6 @@
 #include "windows/post_processing_window.hpp"
 #include "windows/project_explorer.hpp"
 #include "windows/properties.hpp"
-#include "windows/graph_window.hpp"
 #include "windows/selection_window.hpp"
 #include "windows/settings_window.hpp"
 #include "windows/tool_properties_window.hpp"

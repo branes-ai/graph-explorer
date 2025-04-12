@@ -21,6 +21,8 @@ erhe_target_sources_grouped(
     explorer_windows.cpp
     explorer_windows.hpp
     erhe.ini
+    graph/graph_window.cpp
+    graph/graph_window.hpp
     graphics/gradients.cpp
     graphics/gradients.hpp
     graphics/icon_rasterization.cpp
@@ -273,8 +275,6 @@ erhe_target_sources_grouped(
     windows/imgui_window_scene_view_node.hpp
     windows/item_tree_window.cpp
     windows/item_tree_window.hpp
-    windows/graph_window.cpp
-    windows/graph_window.hpp
     windows/layers_window.cpp
     windows/layers_window.hpp
     windows/network_window.cpp
