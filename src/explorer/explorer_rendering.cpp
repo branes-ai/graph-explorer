@@ -164,9 +164,10 @@ Explorer_rendering::Explorer_rendering(
     };
 
     auto sky = make_renderpass("Sky");
-    sky->mesh_layers    = {};
-    sky->passes         = { &m_pipeline_renderpasses.sky };
-    sky->primitive_mode = erhe::primitive::Primitive_mode::polygon_fill;
+    sky->mesh_layers           = {};
+    sky->non_mesh_vertex_count = 3; // Fullscreen quad
+    sky->passes                = { &m_pipeline_renderpasses.sky };
+    sky->primitive_mode        = erhe::primitive::Primitive_mode::polygon_fill;
     sky->filter = erhe::Item_filter{
         .require_all_bits_set         = 0,
         .require_at_least_one_bit_set = 0,

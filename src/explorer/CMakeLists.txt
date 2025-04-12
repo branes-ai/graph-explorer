@@ -21,6 +21,20 @@ erhe_target_sources_grouped(
     explorer_windows.cpp
     explorer_windows.hpp
     erhe.ini
+    graph/constant.cpp
+    graph/constant.hpp
+    graph/add.cpp
+    graph/add.hpp
+    graph/graph.cpp
+    graph/graph.hpp
+    graph/graph_node.cpp
+    graph/graph_node.hpp
+    graph/graph_window.cpp
+    graph/graph_window.hpp
+    graph/node_properties.cpp
+    graph/node_properties.hpp
+    graph/payload.cpp
+    graph/payload.hpp
     graphics/gradients.cpp
     graphics/gradients.hpp
     graphics/icon_rasterization.cpp
@@ -273,8 +287,6 @@ erhe_target_sources_grouped(
     windows/imgui_window_scene_view_node.hpp
     windows/item_tree_window.cpp
     windows/item_tree_window.hpp
-    windows/graph_window.cpp
-    windows/graph_window.hpp
     windows/layers_window.cpp
     windows/layers_window.hpp
     windows/network_window.cpp
@@ -339,6 +351,7 @@ target_link_libraries(
     erhe::geometry_renderer
     erhe::gl
     erhe::gltf
+    erhe::graph
     erhe::graphics
     erhe::graphics_buffer_sink
     erhe::imgui

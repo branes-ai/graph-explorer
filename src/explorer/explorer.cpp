@@ -11,6 +11,8 @@
 #include "input_state.hpp"
 #include "time.hpp"
 
+#include "graph/graph_window.hpp"
+#include "graph/node_properties.hpp"
 #include "graphics/icon_set.hpp"
 #include "operations/operation_stack.hpp"
 #include "renderers/id_renderer.hpp"
@@ -42,7 +44,6 @@
 #include "windows/post_processing_window.hpp"
 #include "windows/project_explorer.hpp"
 #include "windows/properties.hpp"
-#include "windows/graph_window.hpp"
 #include "windows/selection_window.hpp"
 #include "windows/settings_window.hpp"
 #include "windows/tool_properties_window.hpp"
@@ -66,6 +67,7 @@
 #include "erhe_gl/gl_log.hpp"
 #include "erhe_gl/wrapper_functions.hpp"
 #include "erhe_gltf/gltf_log.hpp"
+#include "erhe_graph/graph_log.hpp"
 #include "erhe_graphics/buffer_transfer_queue.hpp"
 #include "erhe_graphics/graphics_log.hpp"
 #include "erhe_graphics/instance.hpp"
@@ -595,6 +597,7 @@ public:
                 m_post_processing_window = std::make_unique<Post_processing_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_properties             = std::make_unique<Properties                      >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_graph_window           = std::make_unique<Graph_window                    >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context, *m_explorer_message_bus.get());
+                m_node_properties_window = std::make_unique<Node_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_tool_properties_window = std::make_unique<Tool_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_viewport_config_window = std::make_unique<Viewport_config_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_logs                   = std::make_unique<erhe::imgui::Logs               >(*m_commands.get(),       *m_imgui_renderer.get());
@@ -1130,6 +1133,7 @@ public:
     std::unique_ptr<Post_processing_window          >        m_post_processing_window;
     std::unique_ptr<Properties                      >        m_properties;
     std::unique_ptr<Graph_window                    >        m_graph_window;
+    std::unique_ptr<Node_properties_window          >        m_node_properties_window;
     std::unique_ptr<Tool_properties_window          >        m_tool_properties_window;
     std::unique_ptr<Viewport_config_window          >        m_viewport_config_window;
     std::unique_ptr<erhe::imgui::Logs               >        m_logs;
@@ -1191,6 +1195,7 @@ void run_explorer()
         erhe::file::initialize_logging();
         erhe::gltf::initialize_logging();
         erhe::geometry::initialize_logging();
+        erhe::graph::initialize_logging();
         erhe::graphics::initialize_logging();
         erhe::imgui::initialize_logging();
         erhe::item::initialize_logging();

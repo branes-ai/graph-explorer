@@ -13,6 +13,7 @@ namespace editor {
 class Property_editor
 {
 public:
+    void reset_row   ();
     void reset       ();
     void resume      ();
     void push_group  (std::string_view label, ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None, float indent = 0.0f, bool* open_state = nullptr);
@@ -32,8 +33,8 @@ protected:
         std::function<void()>   editor;
         ImGuiTreeNodeFlags      flags{ImGuiTreeNodeFlags_None};
         float                   indent{0.0f};
-        std::optional<uint32_t> label_text_color;
-        std::optional<uint32_t> label_background_color;
+        std::optional<uint32_t> label_text_color{};
+        std::optional<uint32_t> label_background_color{};
         bool*                   open_state{nullptr};
     };
     std::vector<Entry> m_entries;

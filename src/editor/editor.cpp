@@ -11,6 +11,8 @@
 #include "input_state.hpp"
 #include "time.hpp"
 
+#include "graph/graph_window.hpp"
+#include "graph/node_properties.hpp"
 #include "graphics/icon_set.hpp"
 #include "operations/operation_stack.hpp"
 #include "renderers/id_renderer.hpp"
@@ -36,7 +38,7 @@
 #include "windows/commands_window.hpp"
 #include "windows/composer_window.hpp"
 #include "windows/debug_view_window.hpp"
-#include "windows/graph_window.hpp"
+#include "windows/icon_browser.hpp"
 #include "windows/layers_window.hpp"
 #include "windows/network_window.hpp"
 #include "windows/operations.hpp"
@@ -46,6 +48,7 @@
 #include "windows/rendergraph_window.hpp"
 #include "windows/selection_window.hpp"
 #include "windows/settings_window.hpp"
+#include "windows/sheet_window.hpp"
 #include "windows/tool_properties_window.hpp"
 #include "windows/viewport_config_window.hpp"
 
@@ -67,6 +70,7 @@
 #include "erhe_gl/gl_log.hpp"
 #include "erhe_gl/wrapper_functions.hpp"
 #include "erhe_gltf/gltf_log.hpp"
+#include "erhe_graph/graph_log.hpp"
 #include "erhe_graphics/buffer_transfer_queue.hpp"
 #include "erhe_graphics/graphics_log.hpp"
 #include "erhe_graphics/instance.hpp"
@@ -589,7 +593,10 @@ public:
                 m_settings_window        = std::make_unique<Settings_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
                 m_clipboard_window       = std::make_unique<Clipboard_window                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
                 m_commands_window        = std::make_unique<Commands_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
-                m_graph_window           = std::make_unique<Graph_window                    >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
+                m_graph_window           = std::make_unique<Graph_window                    >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context, *m_editor_message_bus.get());
+                m_node_properties_window = std::make_unique<Node_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
+                m_icon_browser           = std::make_unique<Icon_browser                    >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
+                m_sheet_window           = std::make_unique<Sheet_window                    >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context, *m_editor_message_bus.get());
                 m_layers_window          = std::make_unique<Layers_window                   >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
                 m_network_window         = std::make_unique<Network_window                  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_editor_context);
                 m_operations             = std::make_unique<Operations                      >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(), m_editor_context, *m_editor_message_bus.get());
@@ -1017,6 +1024,7 @@ public:
         m_editor_context.selection              = m_selection             .get();
         m_editor_context.selection_tool         = m_selection_tool        .get();
         m_editor_context.settings_window        = m_settings_window       .get();
+        m_editor_context.sheet_window           = m_sheet_window          .get();
         m_editor_context.time                   = m_time                  .get();
         m_editor_context.tools                  = m_tools                 .get();
         m_editor_context.transform_tool         = m_transform_tool        .get();
@@ -1126,6 +1134,9 @@ public:
     std::unique_ptr<Clipboard_window                >        m_clipboard_window;
     std::unique_ptr<Commands_window                 >        m_commands_window;
     std::unique_ptr<Graph_window                    >        m_graph_window;
+    std::unique_ptr<Node_properties_window          >        m_node_properties_window;
+    std::unique_ptr<Icon_browser                    >        m_icon_browser;
+    std::unique_ptr<Sheet_window                    >        m_sheet_window;
     std::unique_ptr<Layers_window                   >        m_layers_window;
     std::unique_ptr<Network_window                  >        m_network_window;
     std::unique_ptr<Operations                      >        m_operations;
@@ -1194,6 +1205,7 @@ void run_editor()
         erhe::file::initialize_logging();
         erhe::gltf::initialize_logging();
         erhe::geometry::initialize_logging();
+        erhe::graph::initialize_logging();
         erhe::graphics::initialize_logging();
         erhe::imgui::initialize_logging();
         erhe::item::initialize_logging();

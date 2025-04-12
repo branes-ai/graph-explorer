@@ -21,6 +21,32 @@ erhe_target_sources_grouped(
     editor_windows.cpp
     editor_windows.hpp
     erhe.ini
+    graph/node_properties.cpp
+    graph/node_properties.hpp
+    graph/graph_window.cpp
+    graph/graph_window.hpp
+    graph/payload.cpp
+    graph/payload.hpp
+    graph/constant.cpp
+    graph/constant.hpp
+    graph/add.cpp
+    graph/add.hpp
+    graph/passthrough.cpp
+    graph/passthrough.hpp
+    graph/subtract.cpp
+    graph/subtract.hpp
+    graph/multiply.cpp
+    graph/multiply.hpp
+    graph/divide.cpp
+    graph/divide.hpp
+    graph/load.cpp
+    graph/load.hpp
+    graph/shader_graph.cpp
+    graph/shader_graph.hpp
+    graph/shader_graph_node.cpp
+    graph/shader_graph_node.hpp
+    graph/store.cpp
+    graph/store.hpp
     graphics/gradients.cpp
     graphics/gradients.hpp
     graphics/icon_rasterization.cpp
@@ -128,6 +154,8 @@ erhe_target_sources_grouped(
     res/shaders/fat_triangle.frag
     res/shaders/fat_triangle.geom
     res/shaders/fat_triangle.vert
+    res/shaders/grid.frag
+    res/shaders/grid.vert
     res/shaders/id.frag
     res/shaders/id.vert
     res/shaders/line_after_compute.frag
@@ -271,12 +299,12 @@ erhe_target_sources_grouped(
     windows/composer_window.hpp
     windows/debug_view_window.cpp
     windows/debug_view_window.hpp
+    windows/icon_browser.cpp
+    windows/icon_browser.hpp
     windows/imgui_window_scene_view_node.cpp
     windows/imgui_window_scene_view_node.hpp
     windows/item_tree_window.cpp
     windows/item_tree_window.hpp
-    windows/graph_window.cpp
-    windows/graph_window.hpp
     windows/layers_window.cpp
     windows/layers_window.hpp
     windows/network_window.cpp
@@ -297,6 +325,8 @@ erhe_target_sources_grouped(
     windows/selection_window.hpp
     windows/settings_window.cpp
     windows/settings_window.hpp
+    windows/sheet_window.cpp
+    windows/sheet_window.hpp
     windows/tool_properties_window.cpp
     windows/tool_properties_window.hpp
     windows/viewport_config_window.cpp
@@ -339,6 +369,7 @@ target_link_libraries(
     erhe::geometry_renderer
     erhe::gl
     erhe::gltf
+    erhe::graph
     erhe::graphics
     erhe::graphics_buffer_sink
     erhe::imgui
@@ -362,7 +393,33 @@ target_link_libraries(
     RectangleBinPack
     rapidjson
     Taskflow
+    tinyexpr
 )
+
+# Icon font download and process
+find_package(Python3 COMPONENTS Interpreter)
+if (NOT ${Python3_FOUND})
+    message(FATAL_ERROR "Python3 is needed to generate sources.")
+endif ()
+set(ICON_FONT_MDI_DATA_URI  "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/css/materialdesignicons.css")
+set(ICON_FONT_MDI_DATA_FILE "${CMAKE_CURRENT_SOURCE_DIR}/res/fonts/materialdesignicons.css")
+set(ICON_FONT_MDI_TTF_URI   "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf")
+set(ICON_FONT_MDI_TTF_FILE  "${CMAKE_CURRENT_SOURCE_DIR}/res/fonts/materialdesignicons-webfont.ttf")
+if (NOT EXISTS ${ICON_FONT_MDI_DATA_FILE})
+    message(STATUS "Downloading Material Design Icons font .css...")
+    file(DOWNLOAD "${ICON_FONT_MDI_DATA_URI}" "${ICON_FONT_MDI_DATA_FILE}" SHOW_PROGRESS)
+endif()
+if (NOT EXISTS ${ICON_FONT_MDI_TTF_FILE})
+    message(STATUS "Downloading Material Design Icons font .ttf...")
+    file(DOWNLOAD "${ICON_FONT_MDI_TTF_URI}" "${ICON_FONT_MDI_TTF_FILE}" SHOW_PROGRESS)
+endif()
+message(STATUS "Running GenerateIconFontCppHeaders.py to generate MaterialDesignIcon font header file")
+execute_process(
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/GenerateIconFontCppHeaders.py"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 if (${ERHE_GUI_LIBRARY} STREQUAL "imgui")
     target_link_libraries(${_target} PRIVATE imgui)
 endif ()

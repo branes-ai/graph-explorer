@@ -1817,7 +1817,8 @@ private:
             .data = fastgltf::sources::Vector{
                 .bytes    = std::vector<std::byte>{index_data_source.begin(), index_data_source.end()},
                 .mimeType = fastgltf::MimeType::GltfBuffer
-            }
+            },
+            .name = {}
         };
 
         m_gltf_asset.buffers.emplace_back(std::move(gltf_index_buffer));
@@ -1830,22 +1831,24 @@ private:
         buffer_view.target      = fastgltf::BufferTarget::ElementArrayBuffer;
         m_gltf_asset.bufferViews.emplace_back(std::move(buffer_view));
 
-        FASTGLTF_STD_PMR_NS::vector<std::int64_t> max_value(1);
-        FASTGLTF_STD_PMR_NS::vector<std::int64_t> min_value(1);
-        max_value.at(0) = static_cast<std::int64_t>(vertex_count - 1);
-        min_value.at(0) = static_cast<std::int64_t>(0);
-        const fastgltf::Accessor indices_accessor{
+        fastgltf::AccessorBoundsArray min_value{1, fastgltf::AccessorBoundsArray::BoundsType::int64};
+        fastgltf::AccessorBoundsArray max_value{1, fastgltf::AccessorBoundsArray::BoundsType::int64};
+        max_value.set<std::int64_t>(0, static_cast<std::int64_t>(vertex_count - 1));
+        min_value.set<std::int64_t>(0, 0);
+        fastgltf::Accessor indices_accessor{
             .byteOffset      = 0,
             .count           = index_count,
             .type            = fastgltf::AccessorType::Scalar,
             .componentType   = fastgltf::ComponentType::UnsignedInt,
             .normalized      = false,
-            .max             = max_value,
-            .min             = min_value,
+            .max             = {},
+            .min             = {},
             .bufferViewIndex = entry.index_buffer_view,
             .sparse          = {},
             .name            = "indices"
         };
+        indices_accessor.max = std::move(max_value);
+        indices_accessor.min = std::move(min_value);
         entry.index_buffer_accessor = m_gltf_asset.accessors.size();
         m_gltf_asset.accessors.emplace_back(std::move(indices_accessor));
     }
@@ -1869,7 +1872,8 @@ private:
             .data = fastgltf::sources::Vector{
                 .bytes    = std::vector<std::byte>{vertex_data_source.begin(), vertex_data_source.end()},
                 .mimeType = fastgltf::MimeType::GltfBuffer
-            }
+            },
+            .name = {}
         };
         m_gltf_asset.buffers.emplace_back(std::move(gltf_vertex_buffer));
 
@@ -1895,10 +1899,13 @@ private:
 
             // Scan for attribute min and max
             const std::size_t dimension = get_component_count(erhe_attribute.attribute->format);
-            FASTGLTF_STD_PMR_NS::vector<double> max_value(dimension);
-            FASTGLTF_STD_PMR_NS::vector<double> min_value(dimension);
-            std::fill(max_value.begin(), max_value.end(), std::numeric_limits<float>::lowest());
-            std::fill(min_value.begin(), min_value.end(), std::numeric_limits<float>::max());
+            fastgltf::AccessorBoundsArray min_value{dimension, fastgltf::AccessorBoundsArray::BoundsType::float64};
+            fastgltf::AccessorBoundsArray max_value{dimension, fastgltf::AccessorBoundsArray::BoundsType::float64};
+
+            for (size_t c = 0; c < dimension; ++c) {
+                max_value.set<double>(c, static_cast<double>(std::numeric_limits<float>::lowest()));
+                min_value.set<double>(c, static_cast<double>(std::numeric_limits<float>::max()));
+            }
 
             const std::byte* attribute_base_ = vertex_data_source.data() + erhe_attribute.attribute->offset;
             const std::uint8_t* attribute_base = reinterpret_cast<const std::uint8_t*>(attribute_base_);
@@ -1912,8 +1919,8 @@ private:
                     1.0f
                 );
                 for (std::size_t c = 0; c < dimension; ++c) {
-                    min_value[c] = std::min(static_cast<float>(min_value[c]), v[c]);
-                    max_value[c] = std::max(static_cast<float>(max_value[c]), v[c]);
+                    min_value.set<double>(c, std::min(min_value.get<double>(c), static_cast<double>(v[c])));
+                    max_value.set<double>(c, std::max(max_value.get<double>(c), static_cast<double>(v[c])));
                 }
             }
             fastgltf::Accessor accessor{
@@ -1922,12 +1929,14 @@ private:
                 .type            = get_accessor_type (erhe_attribute.attribute->format),
                 .componentType   = get_component_type(erhe_attribute.attribute->format),
                 .normalized      = get_normalized    (erhe_attribute.attribute->format),
-                .max             = max_value,
-                .min             = min_value,
+                .max             = {},
+                .min             = {},
                 .bufferViewIndex = entry.vertex_buffer_view,
                 .sparse          = {},
                 .name            = FASTGLTF_STD_PMR_NS::string{attribute_name}
             };
+            accessor.max = std::move(max_value);
+            accessor.min = std::move(min_value);
             const size_t accessor_index = m_gltf_asset.accessors.size();
             m_gltf_asset.accessors.emplace_back(std::move(accessor));
             FASTGLTF_STD_PMR_NS::string gltf_attribute_name{attribute_name};
@@ -2049,15 +2058,29 @@ private:
                         material->base_color.b,
                         material->base_color.a
                     },
-                    .metallicFactor  = material->metallic,
-                    .roughnessFactor = material->roughness.x,
+                    .metallicFactor           = material->metallic,
+                    .roughnessFactor          = material->roughness.x,
+                    .baseColorTexture         = {},
+                    .metallicRoughnessTexture = {}
                 },
+                .normalTexture    = {},
+                .occlusionTexture = {},
+                .emissiveTexture  = {},
                 .emissiveFactor = {
                     material->emissive.r,
                     material->emissive.g,
                     material->emissive.b
                 },
-                .name = FASTGLTF_STD_PMR_NS::string{material->get_name()}
+                .anisotropy                               = {},
+                .clearcoat                                = {},
+                .iridescence                              = {},
+                .sheen                                    = {},
+                .specular                                 = {},
+                .transmission                             = {},
+                .volume                                   = {},
+                .packedNormalMetallicRoughnessTexture     = {},
+                .packedOcclusionRoughnessMetallicTextures = {},
+                .name                                     = FASTGLTF_STD_PMR_NS::string{material->get_name()}
             };
             m_gltf_asset.materials.push_back(std::move(gltf_material));
         }
@@ -2085,6 +2108,10 @@ private:
             }
             const std::shared_ptr<erhe::primitive::Triangle_soup>& triangle_soup = primitive_render_shape->get_triangle_soup();
             const std::shared_ptr<erhe::geometry::Geometry>& geometry = primitive_render_shape->get_geometry_const();
+            if (!geometry && !triangle_soup) {
+                log_gltf->warn("Mesh primitive has neither triangle soup nor geometry");
+                continue;
+            }
             Export_entry export_entry = triangle_soup
                 ? process_triangle_soup(triangle_soup.get())
                 : process_geometry(geometry.get());
@@ -2141,6 +2168,7 @@ private:
                 };
                 break;
             }
+            case erhe::scene::Projection::Type::other:
             case erhe::scene::Projection::Type::generic_frustum: {
                 ERHE_FATAL("Not implemented");
             }

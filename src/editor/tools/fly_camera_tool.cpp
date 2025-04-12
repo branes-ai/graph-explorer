@@ -402,8 +402,8 @@ Fly_camera_serialization_command::Fly_camera_serialization_command(erhe::command
 auto Fly_camera_serialization_command::try_call() -> bool
 {
     //// TODO 
-    m_context.fly_camera_tool->synthesize_input();
-    //// m_context.fly_camera_tool->serialize_transform(m_store);
+    //// m_context.fly_camera_tool->synthesize_input();
+    m_context.fly_camera_tool->serialize_transform(m_store);
     return true;
 }
 
@@ -459,6 +459,7 @@ void Fly_camera_tool::synthesize_input()
         erhe::window::Input_event{
             .type = erhe::window::Input_event_type::no_event,
             .timestamp_ns = timestamp_ns,
+            .u = { .dummy = false }
         }
     );
 
