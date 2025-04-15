@@ -143,7 +143,7 @@
             }
         },
         {
-            "name": "Configure Visual Studio 2022",
+            "name": "VS2022",
             "inherits": [
                 "Configure Base",
                 "Configure Windows"
@@ -263,12 +263,12 @@
         {
             "name": "Build Visual Studio 2022 Debug",
             "inherits": "Build Debug",
-            "configurePreset": "Configure Visual Studio 2022"
+            "configurePreset": "VS2022"
         },
         {
             "name": "Build Visual Studio 2022 Release",
             "inherits": "Build Release",
-            "configurePreset": "Configure Visual Studio 2022"
+            "configurePreset": "VS2022"
         },
 
         {

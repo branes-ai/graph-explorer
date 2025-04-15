@@ -146,6 +146,17 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+    NAME              domain_flow
+    #VERSION          0.1.1
+    GIT_TAG           main
+    GITHUB_REPOSITORY branes-ai/domain_flow
+    OPTIONS           "DOMAINFLOW_BUILD_TESTS OFF"
+)
+
+message(STATUS "Branes.ai domain_flow library is found at domain_flow_SOURCE_DIR: ${domain_flow_SOURCE_DIR}")
+include_directories(${domain_flow_SOURCE_DIR}/include)
+
+CPMAddPackage(
     NAME              cxxopts 
     VERSION           3.2.1
     GITHUB_REPOSITORY jarro2783/cxxopts
