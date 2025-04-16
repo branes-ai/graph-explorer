@@ -70,8 +70,6 @@ erhe_target_sources_grouped(
     operations/operation_stack.hpp
     parsers/geogram.cpp
     parsers/geogram.hpp
-    parsers/gltf.cpp
-    parsers/gltf.hpp
     parsers/json_polyhedron.cpp
     parsers/json_polyhedron.hpp
     parsers/wavefront_obj.cpp
@@ -270,6 +268,8 @@ erhe_target_sources_grouped(
     tools/transform/transform_tool.hpp
     tools/transform/transform_tool_settings.cpp
     tools/transform/transform_tool_settings.hpp
+    xr/null_headset_view.cpp
+    xr/null_headset_view.hpp
     windows.ini
     windows/animation_curve.cpp
     windows/animation_curve.hpp
@@ -317,27 +317,6 @@ erhe_target_sources_grouped(
 if (${ERHE_USE_PRECOMPILED_HEADERS})
     target_precompile_headers(${_target} REUSE_FROM erhe_pch)
 endif ()
-if (${ERHE_XR_LIBRARY} STREQUAL "openxr")
-    erhe_target_sources_grouped(
-        ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
-        xr/controller_visualization.cpp
-        xr/controller_visualization.hpp
-        xr/hand_tracker.cpp
-        xr/hand_tracker.hpp
-        xr/headset_view.cpp
-        xr/headset_view.hpp
-        xr/headset_view_resources.cpp
-        xr/headset_view_resources.hpp
-        xr/theremin.cpp
-        xr/theremin.hpp
-    )
-else ()
-    erhe_target_sources_grouped(
-        ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
-        xr/null_headset_view.cpp
-        xr/null_headset_view.hpp
-    )
-endif ()
 target_link_libraries(
     ${_target}
     PRIVATE
@@ -382,12 +361,6 @@ endif ()
 if (${ERHE_SVG_LIBRARY} STREQUAL "lunasvg")
     target_link_libraries(${_target} PRIVATE lunasvg)
 endif ()
-if (${ERHE_AUDIO_LIBRARY} STREQUAL "miniaudio")
-    target_link_libraries(${_target} PRIVATE miniaudio)
-endif ()
-if (${ERHE_XR_LIBRARY} STREQUAL "openxr")
-    target_link_libraries(${_target} PRIVATE erhe_xr openxr_loader)
-endif ()
 target_include_directories(${_target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(
     ${_target} PROPERTIES
@@ -398,35 +371,3 @@ set_target_properties(
 )
 erhe_target_settings(${_target})
 set_property(TARGET ${_target} PROPERTY FOLDER "erhe-executables")
-
-########
-
-#set(_target "net-test")
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-#add_executable(${_target})
-#erhe_target_sources_grouped(
-#    ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
-#    net_test.cpp
-#)
-#target_link_libraries(
-#    ${_target}
-#    PRIVATE
-#        geogram
-#        erhe::log
-#        erhe::net
-#        cxxopts
-#        mINI
-#        RectangleBinPack
-#        rapidjson
-#)
-#if (${ERHE_TERMINAL_LIBRARY} STREQUAL "cpp-terminal")
-#    target_link_libraries(${_target} PRIVATE cpp-terminal)
-#endif ()
-#target_include_directories(${_target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-#if (${ERHE_USE_PRECOMPILED_HEADERS})
-#    target_precompile_headers(${_target} REUSE_FROM erhe_pch)
-#endif ()
-# MSVC only target_link_options(${_target} PRIVATE "/MAP:${CMAKE_CURRENT_SOURCE_DIR}/explorer.map")
-#erhe_target_settings(${_target})
-#set_property(TARGET ${_target} PROPERTY FOLDER "erhe-executables")
-

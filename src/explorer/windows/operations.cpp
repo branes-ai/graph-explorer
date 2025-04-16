@@ -66,7 +66,6 @@ Operations::Operations(
     , m_truncate_command      {commands, "Geometry.Conway.Truncate",           [this]() -> bool { truncate      (); return true; } }
     , m_gyro_command          {commands, "Geometry.Conway.Gyro",               [this]() -> bool { gyro          (); return true; } }
     , m_chamfer_command       {commands, "Geometry.Conway.Chamfer",            [this]() -> bool { chamfer       (); return true; } }
-    , m_export_gltf_command   {commands, "File.Export.glTF",                   [this]() -> bool { export_gltf   (); return true; } }
 {
     commands.register_command(&m_merge_command         );
     commands.register_command(&m_triangulate_command   );
@@ -299,10 +298,6 @@ void Operations::imgui()
     //        );
     //    }
     //}
-
-    if (make_button("Export glTF", erhe::imgui::Item_mode::normal, button_size)) {
-        export_gltf();
-    }
 
     if (make_button("Merge", multi_select_meshes, button_size)) {
         merge();
@@ -541,88 +536,6 @@ void Operations::chamfer()
 {
     tf::Executor& executor = m_context.operation_stack->get_executor();
     executor.silent_async([this](){m_context.operation_stack->queue(std::make_shared<Chamfer_operation>(mesh_context()));});
-}
-
-#if defined(ERHE_WINDOW_LIBRARY_SDL)
-static void s_export_callback(void* userdata, const char* const* filelist, int filter)
-{
-    Operations* operations = static_cast<Operations*>(userdata);
-    operations->export_callback(filelist, filter);
-}
-#endif
-
-void Operations::export_callback(const char* const* filelist, int filter)
-{
-    static_cast<void>(filter);
-    if (filelist == nullptr) {
-        // error
-        return;
-    }
-    const char* const file = *filelist;
-    if (file == nullptr) {
-        // nothing chosen / canceled
-        return;
-    }
-    //std::optional<std::filesystem::path> path = erhe::file::select_file_for_write();
-    std::optional<std::filesystem::path> path = std::filesystem::path{file};
-
-    if (m_last_hover_scene_view == nullptr) {
-        return;
-    }
-
-    std::shared_ptr<Scene_root> scene_root = m_last_hover_scene_view->get_scene_root();
-    if (!scene_root) {
-        return;
-    }
-
-    const erhe::scene::Scene& scene = scene_root->get_scene();
-    std::shared_ptr<erhe::scene::Node> root_node = scene.get_root_node();
-    if (!root_node) {
-        return;
-    }
-
-    if (path.has_value()) {
-        const bool binary = true;
-        std::string gltf = erhe::gltf::export_gltf(*root_node.get(), binary);
-        log_operations->info("{}", gltf);
-        erhe::file::write_file(path.value(), gltf);
-    }
-}
-
-void Operations::export_gltf()
-{
-#if defined(ERHE_WINDOW_LIBRARY_SDL)
-    SDL_DialogFileFilter filters[3];
-    filters[0].name    = "glTF files";
-    filters[0].pattern = "glb;gltf";
-    filters[1].name    = "All files";
-    filters[1].pattern = "*";
-    SDL_Window* window = static_cast<SDL_Window*>(m_context.context_window->get_sdl_window());
-    SDL_ShowSaveFileDialog(s_export_callback, this, window, filters, 2, nullptr);
-#elif defined(ERHE_OS_WINDOWS)
-    try {
-        std::optional<std::filesystem::path> path_opt = erhe::file::select_file_for_write();
-        if (path_opt.has_value()) {
-            std::string path = path_opt.value().string();
-            const char* const filelist[2] = {
-                path.data(),
-                nullptr
-            };
-            int filter = 0;
-            export_callback(filelist, filter);
-        }
-    } catch (...) {
-        log_operations->error("exception: file dialog / glTF export");
-    }
-#else
-    const char* const filelist[2] =
-    {
-        "erhe.glb",
-        nullptr
-    };
-    int filter = 0;
-    export_callback(filelist, filter);
-#endif
 }
 
 } // namespace explorer
