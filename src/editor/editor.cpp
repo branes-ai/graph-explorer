@@ -1227,7 +1227,9 @@ void run_editor()
     }
 
     erhe::time::sleep_initialize();
+#if !defined(ERHE_PHYSICS_LIBRARY_NONE)
     erhe::physics::initialize_physics_system();
+#endif
 
     {
         ERHE_PROFILE_SCOPE("initialize geogram");

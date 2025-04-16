@@ -82,8 +82,6 @@ erhe_target_sources_grouped(
     operations/operation_stack.hpp
     parsers/geogram.cpp
     parsers/geogram.hpp
-    parsers/gltf.cpp
-    parsers/gltf.hpp
     parsers/json_polyhedron.cpp
     parsers/json_polyhedron.hpp
     parsers/wavefront_obj.cpp
@@ -335,6 +333,15 @@ erhe_target_sources_grouped(
 if (${ERHE_USE_PRECOMPILED_HEADERS})
     target_precompile_headers(${_target} REUSE_FROM erhe_pch)
 endif ()
+
+if (${ERHE_GLTF_LIBRARY} STREQUAL "fastgltf")
+    erhe_target_sources_grouped(
+        ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
+        parsers/gltf.cpp
+        parsers/gltf.hpp
+    )
+endif ()
+
 if (${ERHE_XR_LIBRARY} STREQUAL "openxr")
     erhe_target_sources_grouped(
         ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES

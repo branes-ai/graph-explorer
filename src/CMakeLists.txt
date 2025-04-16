@@ -36,7 +36,9 @@ if (${ERHE_GUI_LIBRARY} STREQUAL "imgui")
     add_subdirectory(explorer)
 endif ()    
 
-add_subdirectory(example)
+if (${ERHE_GLTF_LIBRARY} STREQUAL "fastgltf")
+    add_subdirectory(example)
+endif ()
 
 if (${ERHE_GUI_LIBRARY} STREQUAL "imgui")
     add_subdirectory(hextiles)

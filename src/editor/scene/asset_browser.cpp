@@ -26,6 +26,7 @@
 
 namespace editor {
 
+#if !defined(ERHE_GLTF_LIBRARY_NONE)
 class Scene_open_operation : public Operation
 {
 public:
@@ -104,6 +105,7 @@ void Scene_open_operation::undo(Editor_context& context)
     context.editor_scenes->unregister_scene_root(m_scene_root.get());
     m_scene_root->remove_browser_window();
 }
+#endif
 
 //
 Asset_node::Asset_node(const Asset_node&)            = default;
@@ -225,11 +227,13 @@ Asset_browser::Asset_browser(erhe::imgui::Imgui_renderer& imgui_renderer, erhe::
             .require_at_least_one_bit_clear = 0
         }
     );
+#if !defined(ERHE_GLTF_LIBRARY_NONE)
     m_node_tree_window->set_item_callback(
         [&](const std::shared_ptr<erhe::Item_base>& item) -> bool {
             return item_callback(item);
         }
     );
+#endif
 }
 
 void Asset_browser::scan(const std::filesystem::path& path, Asset_node* parent)
@@ -286,6 +290,7 @@ void Asset_browser::scan()
     scan(assets_root, m_root.get());
 }
 
+#if !defined(ERHE_GLTF_LIBRARY_NONE)
 auto Asset_browser::try_import(const std::shared_ptr<Asset_file_gltf>& gltf) -> bool
 {
     std::string import_label = fmt::format("Import '{}'", erhe::file::to_string(gltf->get_source_path()));
@@ -437,5 +442,6 @@ auto Asset_browser::item_callback(const std::shared_ptr<erhe::Item_base>& item) 
 
     return false;
 }
+#endif
 
 } // namespace editor

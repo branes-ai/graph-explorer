@@ -104,7 +104,7 @@ void Node_physics::before_physics_simulation()
     };
     m_rigid_body->set_world_transform(transform);
 
-    const auto get_transform = m_rigid_body->get_world_transform();
+    const glm::mat4 get_transform = m_rigid_body->get_world_transform();
     const glm::vec3 get_world_position = glm::vec3{get_transform * glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}};
 }
 

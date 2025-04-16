@@ -68,7 +68,9 @@ Operations::Operations(
     , m_truncate_command      {commands, "Geometry.Conway.Truncate",           [this]() -> bool { truncate      (); return true; } }
     , m_gyro_command          {commands, "Geometry.Conway.Gyro",               [this]() -> bool { gyro          (); return true; } }
     , m_chamfer_command       {commands, "Geometry.Conway.Chamfer",            [this]() -> bool { chamfer       (); return true; } }
+#if defined(ERHE_GLTF_LIBRARY_FASTGLTF)
     , m_export_gltf_command   {commands, "File.Export.glTF",                   [this]() -> bool { export_gltf   (); return true; } }
+#endif
 {
     commands.register_command(&m_merge_command         );
     commands.register_command(&m_triangulate_command   );
@@ -300,9 +302,11 @@ void Operations::imgui()
     //    }
     //}
 
+#if defined(ERHE_GLTF_LIBRARY_FASTGLTF)
     if (make_button("Export glTF", erhe::imgui::Item_mode::normal, button_size)) {
         export_gltf();
     }
+#endif
 
     if (make_button("Merge", multi_select_meshes, button_size)) {
         merge();
@@ -543,6 +547,7 @@ void Operations::chamfer()
     executor.silent_async([this](){m_context.operation_stack->queue(std::make_shared<Chamfer_operation>(mesh_context()));});
 }
 
+#if defined(ERHE_GLTF_LIBRARY_FASTGLTF)
 #if defined(ERHE_WINDOW_LIBRARY_SDL)
 static void s_export_callback(void* userdata, const char* const* filelist, int filter)
 {
@@ -624,5 +629,6 @@ void Operations::export_gltf()
     export_callback(filelist, filter);
 #endif
 }
+#endif
 
 } // namespace editor
