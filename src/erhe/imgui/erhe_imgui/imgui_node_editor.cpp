@@ -1164,6 +1164,7 @@ void ed::EditorContext::Begin(const char* id, const ImVec2& size)
     m_NavigateAction.SetWindow(m_Canvas.ViewRect().Min, m_Canvas.ViewRect().GetSize());
 
     // Handle canvas size change. Scale to Y axis, center on X.
+#if 0
     if (!ImRect_IsEmpty(previousVisibleRect) && previousSize != canvasSize)
     {
         m_NavigateAction.FinishNavigation();
@@ -1198,6 +1199,7 @@ void ed::EditorContext::Begin(const char* id, const ImVec2& size)
 
         m_NavigateAction.NavigateTo(m_Style, previousVisibleRect, Detail::NavigateAction::ZoomMode::Exact, 0.0f);
     }
+#endif
 
     m_Canvas.SetView(m_NavigateAction.GetView());
 

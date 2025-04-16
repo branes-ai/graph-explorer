@@ -54,8 +54,9 @@ public:
     auto flags() -> ImGuiWindowFlags override;
 
 private:
-    auto make_constant   () -> Graph_node*;
-    auto make_add        () -> Graph_node*;
+    void make_placeholder_graph();
+    auto make_constant         () -> Graph_node*;
+    auto make_add              () -> Graph_node*;
 
     void on_message(Explorer_message& message);
 
@@ -65,6 +66,8 @@ private:
 
     std::unique_ptr<Node_style_editor_window>       m_style_editor_window;
     std::vector<std::shared_ptr<Graph_node>>        m_nodes;
+
+    bool                                            m_pending_navigate_to_content{false};
 };
 
 } // namespace explorer

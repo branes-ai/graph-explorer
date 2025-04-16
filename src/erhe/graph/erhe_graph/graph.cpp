@@ -8,17 +8,25 @@
 
 namespace erhe::graph {
 
-void Graph::register_node(Node* node)
+void Graph::clear()
+{
+    m_nodes.clear();
+    m_links.clear();
+    m_is_sorted = true;
+}
+
+auto Graph::register_node(Node* node) -> Node*
 {
 #if !defined(NDEBUG)
     const auto i = std::find_if(m_nodes.begin(), m_nodes.end(), [node](Node* entry) { return entry == node; });
     if (i != m_nodes.end()) {
         log_graph->error("Node {} {} is already registered to Graph", node->get_name(), node->get_id());
-        return;
+        return node;
     }
 #endif
     m_nodes.push_back(node);
     log_graph->trace("Registered Node {} {}", node->get_name(), node->get_id());
+    return node;
 }
 
 void Graph::unregister_node(Node* node)

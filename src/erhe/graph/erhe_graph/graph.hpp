@@ -27,7 +27,8 @@ public:
     // Implements Item_host
     auto get_host_name() const -> const char* override;
 
-    void register_node  (Node* node);
+    void clear          ();
+    auto register_node  (Node* node) -> Node*;
     void unregister_node(Node* node);
     auto connect        (Pin* source_pin, Pin* sink_pin) -> Link*;
     void disconnect     (Link* link);
