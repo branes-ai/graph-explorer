@@ -450,5 +450,5 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory(src)
 
 if (MSVC)
-    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "editor")
+    set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "explorer")
 endif ()
