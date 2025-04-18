@@ -7,10 +7,13 @@
 #include "erhe_item/hierarchy.hpp"
 #include "erhe_window/window.hpp"
 
-#include <glm/glm.hpp>
-
 #include <filesystem>
-#include <vector>
+#include <map>
+#include <memory>
+
+namespace sw::dfa {
+    struct DomainFlowGraph;
+}
 
 namespace erhe::imgui {
     class Imgui_windows;
@@ -19,6 +22,8 @@ namespace erhe::imgui {
 namespace explorer {
 
 class Explorer_context;
+class Graph_node;
+class Graph_window;
 
 class Project_node
     : public erhe::Item<erhe::Item_base, erhe::Hierarchy, Project_node>
@@ -46,20 +51,27 @@ public:
     auto get_type_name() const -> std::string_view override;
 };
 
-class Project_file_other : public erhe::Item<erhe::Item_base, Project_node, Project_file_other>
+class Domain_flow_graph_file : public erhe::Item<erhe::Item_base, Project_node, Domain_flow_graph_file>
 {
 public:
-    explicit Project_file_other(const Project_file_other& src);
-    Project_file_other& operator=(const Project_file_other& src);
-    ~Project_file_other() noexcept override;
+    explicit Domain_flow_graph_file(const Domain_flow_graph_file& src);
+    Domain_flow_graph_file& operator=(const Domain_flow_graph_file& src);
+    ~Domain_flow_graph_file() noexcept override;
 
-    explicit Project_file_other(const std::filesystem::path& path);
+    explicit Domain_flow_graph_file(const std::filesystem::path& path);
 
     // Implements Item_base
-    static constexpr std::string_view static_type_name{"Project_file_other"};
+    static constexpr std::string_view static_type_name{"Domain_flow_graph_file"};
     [[nodiscard]] static auto get_static_type() -> uint64_t;
     auto get_type     () const -> uint64_t         override;
     auto get_type_name() const -> std::string_view override;
+
+    auto load                () -> bool;
+    void show_in_graph_window(Graph_window* graph_window);
+
+private:
+    std::shared_ptr<sw::dfa::DomainFlowGraph>          m_dfg;
+    std::map<std::size_t, std::shared_ptr<Graph_node>> m_ui_nodes;
 };
 
 class Project_explorer;
@@ -100,6 +112,9 @@ public:
     [[nodiscard]] auto get_path() const -> std::filesystem::path;
 
 private:
+    auto try_show  (Domain_flow_graph_file& dfg) -> bool;
+    auto open_graph(const std::shared_ptr<Domain_flow_graph_file>& Domain_flow_graph_file) -> bool;
+
     void scan(const std::filesystem::path& path, const std::shared_ptr<Project_node>& parent);
 
     auto make_node    (const std::filesystem::path& path, const std::shared_ptr<Project_node>& parent) -> std::shared_ptr<Project_node>;

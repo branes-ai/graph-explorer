@@ -992,6 +992,7 @@ public:
         m_explorer_context.explorer_settings      = m_explorer_settings       .get();
         m_explorer_context.explorer_windows       = m_explorer_windows        .get();
         m_explorer_context.fly_camera_tool        = m_fly_camera_tool       .get();
+        m_explorer_context.graph_window           = m_graph_window          .get();
         m_explorer_context.grid_tool              = m_grid_tool             .get();
 #if defined(ERHE_XR_LIBRARY_OPENXR)
         m_explorer_context.hand_tracker           = m_hand_tracker          .get();

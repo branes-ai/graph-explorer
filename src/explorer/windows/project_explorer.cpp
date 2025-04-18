@@ -2,17 +2,17 @@
 
 #include "explorer_context.hpp"
 #include "explorer_log.hpp"
-#include "explorer_scenes.hpp"
-#include "graphics/icon_set.hpp"
-#include "operations/ioperation.hpp"
-#include "operations/operation_stack.hpp"
+#include "graph/graph_window.hpp"
+#include "graph/graph_node.hpp"
 #include "windows/item_tree_window.hpp"
 
 #include "erhe_commands/commands.hpp"
 #include "erhe_file/file.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
-#include "erhe_profile/profile.hpp"
-#include "erhe_scene/scene_message_bus.hpp"
+#include "erhe_imgui/imgui_node_editor.h"
+
+#include <dfa/dfa.hpp>
+#include <util/data_file.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -44,13 +44,13 @@ Project_folder& Project_folder::operator=(const Project_folder&) = default;
 Project_folder::~Project_folder() noexcept                     = default;
 Project_folder::Project_folder(const std::filesystem::path& path) : Item{path} {}
 
-auto Project_file_other::get_static_type()       -> uint64_t        { return erhe::Item_type::asset_file_other; }
-auto Project_file_other::get_type       () const -> uint64_t        { return get_static_type(); }
-auto Project_file_other::get_type_name  () const -> std::string_view{ return static_type_name; }
-Project_file_other::Project_file_other(const Project_file_other&)            = default;
-Project_file_other& Project_file_other::operator=(const Project_file_other&) = default;
-Project_file_other::~Project_file_other() noexcept                         = default;
-Project_file_other::Project_file_other(const std::filesystem::path& path) : Item{path} {}
+auto Domain_flow_graph_file::get_static_type()       -> uint64_t        { return erhe::Item_type::asset_file_other; }
+auto Domain_flow_graph_file::get_type       () const -> uint64_t        { return get_static_type(); }
+auto Domain_flow_graph_file::get_type_name  () const -> std::string_view{ return static_type_name; }
+Domain_flow_graph_file::Domain_flow_graph_file(const Domain_flow_graph_file&)            = default;
+Domain_flow_graph_file& Domain_flow_graph_file::operator=(const Domain_flow_graph_file&) = default;
+Domain_flow_graph_file::~Domain_flow_graph_file() noexcept                     = default;
+Domain_flow_graph_file::Domain_flow_graph_file(const std::filesystem::path& path) : Item{path} {}
 
 auto Project_explorer::make_node(const std::filesystem::path& path, const std::shared_ptr<Project_node>& parent) -> std::shared_ptr<Project_node>
 {
@@ -61,17 +61,21 @@ auto Project_explorer::make_node(const std::filesystem::path& path, const std::s
         is_directory = is_directory_test;
     }
 
-    // const bool is_geogram = path.extension() == std::filesystem::path{".geogram"};
+    const bool is_dfg = path.extension() == std::filesystem::path{".dfg"};
 
-    std::shared_ptr<Project_node> new_node;
+    std::shared_ptr<Project_node> new_node{};
     if (is_directory) {
         new_node = std::make_shared<Project_folder>(path);
-    } else {
-        new_node = std::make_shared<Project_file_other>(path);
+    } else if (is_dfg) {
+        new_node = std::make_shared<Domain_flow_graph_file>(path);
     }
-    new_node->enable_flag_bits(erhe::Item_flags::visible);
-    if (parent) {
-        new_node->set_parent(parent);
+    // TODO Handle more file types
+
+    if (new_node) {
+        new_node->enable_flag_bits(erhe::Item_flags::visible);
+        if (parent) {
+            new_node->set_parent(parent);
+        }
     }
     return new_node;
 }
@@ -140,10 +144,8 @@ Project_explorer::Project_explorer(
 )
     : m_context               {explorer_context}
     , m_create_project_command{commands, "File.Create Project", [this]() -> bool { create_project(); return true; } }
-    , m_root_path             {std::filesystem::path("projects")}
+    , m_root_path             {std::filesystem::path("../../data")}
 {
-    ERHE_PROFILE_FUNCTION();
-
     scan();
 
     m_node_tree_window = std::make_shared<Project_explorer_window>(
@@ -243,57 +245,112 @@ void Project_explorer::scan()
     scan(m_root_path, m_root);
 }
 
-auto Project_explorer::item_callback(const std::shared_ptr<erhe::Item_base>& item) -> bool
+auto Domain_flow_graph_file::load() -> bool
 {
-    static_cast<void>(item);
-    //const auto gltf = std::dynamic_pointer_cast<Project_file_gltf>(item);
-    //if (gltf) {
-    //    if (!gltf->is_scanned) {
-    //        gltf->contents = scan_gltf(gltf->get_source_path());
-    //        gltf->is_scanned = true;
-    //    }
-    //
-    //    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup)) {
-    //        ImGui::BeginTooltip();
-    //        for (const auto& line : gltf->contents) {
-    //            ImGui::TextUnformatted(line.c_str());
-    //        }
-    //        ImGui::EndTooltip();
-    //    }
-    //
-    //    const ImGuiID popup_id{ImGui::GetID("project_explorer_node_popup")};
-    //
-    //    if (
-    //        ImGui::IsMouseReleased(ImGuiMouseButton_Right) &&
-    //        ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) &&
-    //        m_popup_node == nullptr
-    //    ) {
-    //        m_popup_node = gltf.get();
-    //        ImGui::OpenPopupEx(popup_id, ImGuiPopupFlags_MouseButtonRight);
-    //    }
-    //
-    //    if (m_popup_node == gltf.get()) {
-    //        ERHE_PROFILE_SCOPE("popup");
-    //        if (ImGui::IsPopupOpen(popup_id, ImGuiPopupFlags_None)) {
-    //            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{10.0f, 10.0f});
-    //            const bool begin_popup_context_item = ImGui::BeginPopupEx(
-    //                popup_id,
-    //                ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings
-    //            );
-    //            if (begin_popup_context_item) {
-    //                if (try_import(gltf) || try_open(gltf)) {
-    //                    m_popup_node = nullptr;
-    //                }
-    //
-    //                ImGui::EndPopup();
-    //            }
-    //            ImGui::PopStyleVar();
-    //        } else {
-    //            m_popup_node = nullptr;
-    //        }
-    //    }
+    using namespace sw::dfa;
+
+    try {
+        std::string file_name = erhe::file::to_string(get_source_path());
+        m_dfg = std::make_shared<DomainFlowGraph>(file_name);
+        m_dfg->graph.load(file_name);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
+{
+    using namespace sw::dfa;
+
+    erhe::graph::Graph&            ui_graph    = graph_window->get_ui_graph();
+    ax::NodeEditor::EditorContext* node_editor = graph_window->get_node_editor();
+
+    ui_graph.clear();
+    node_editor->ClearSelection(); // TODO graph_window.clear()
+
+    for (auto i : m_dfg->graph.nodes()) {
+        const std::size_t     node_id = i.first;
+        const DomainFlowNode& node    = i.second;
+
+        std::shared_ptr<Graph_node> ui_node = std::make_shared<Graph_node>(node.getName());
+        constexpr uint64_t flags = erhe::Item_flags::visible | erhe::Item_flags::content | erhe::Item_flags::show_in_ui;
+        ui_node->enable_flag_bits(flags);
+
+        m_ui_nodes.insert({node_id, ui_node});
+
+        for (std::size_t j = 0, end = node.getNrInputs(); j < end; ++j) {
+            ui_node->make_input_pin(0, node.operandType.at(j));
+        }
+        for (std::size_t j = 0, end = node.getNrOutputs(); j < end; ++j) {
+            ui_node->make_output_pin(0, node.resultType.at(j));
+        }
+        ui_graph.register_node(ui_node.get());
+    }
+
+    //for (auto i : m_dfg->graph.edges()) {
+    //    const std::shared_ptr<Graph_node>& from = m_ui_nodes.at(i.first.first);
+    //    const std::shared_ptr<Graph_node>& to   = m_ui_nodes.at(i.first.second);
+    //    const DomainFlowEdge& edge = i.second;
     //}
 
+}
+
+//void Domain_flow_graph_file::make_link(Graph_node* from, Graph_node* to)
+//{
+//    erhe::graph::Pin*  from_pin = &(from->get_input_pins().at(0));
+//    erhe::graph::Pin*  to_pin   = &(to  ->get_input_pins().at(0));
+//    erhe::graph::Link* link     = m_graph.connect(from_pin, to_pin);
+//}
+
+auto Project_explorer::try_show(Domain_flow_graph_file& dfg) -> bool
+{
+    std::string import_label = fmt::format("Show'{}'", erhe::file::to_string(dfg.get_source_path()));
+    if (ImGui::MenuItem(import_label.c_str())) {
+        dfg.load();
+        dfg.show_in_graph_window(m_context.graph_window);
+        ImGui::CloseCurrentPopup();
+        return true;
+    }
+    return false;
+}
+
+auto Project_explorer::item_callback(const std::shared_ptr<erhe::Item_base>& item) -> bool
+{
+    const auto domain_flow_graph_file = std::dynamic_pointer_cast<Domain_flow_graph_file>(item);
+    if (domain_flow_graph_file) {
+
+        const ImGuiID popup_id{ImGui::GetID("project_explorer_node_popup")};
+
+        if (
+            ImGui::IsMouseReleased(ImGuiMouseButton_Right) &&
+            ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) &&
+            m_popup_node == nullptr
+        ) {
+            m_popup_node = domain_flow_graph_file.get();
+            ImGui::OpenPopupEx(popup_id, ImGuiPopupFlags_MouseButtonRight);
+        }
+
+        if (m_popup_node == domain_flow_graph_file.get()) {
+            if (ImGui::IsPopupOpen(popup_id, ImGuiPopupFlags_None)) {
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{10.0f, 10.0f});
+                const bool begin_popup_context_item = ImGui::BeginPopupEx(
+                    popup_id,
+                    ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings
+                );
+                if (begin_popup_context_item) {
+                    if (try_show(*domain_flow_graph_file.get())) {
+                        m_popup_node = nullptr;
+                    }
+                    ImGui::EndPopup();
+                }
+                ImGui::PopStyleVar();
+            } else {
+                m_popup_node = nullptr;
+            }
+            return true;
+        }
+    }
     return false;
 }
 

@@ -3,15 +3,11 @@
 #endif
 
 #include "graph/graph_window.hpp"
-#include "graph/constant.hpp"
-#include "graph/add.hpp"
+#include "graph/graph_node.hpp"
 #include "windows/property_editor.hpp"
 
 #include "explorer_context.hpp"
-#include "explorer_log.hpp"
 #include "explorer_message_bus.hpp"
-#include "tools/selection_tool.hpp"
-#include "windows/project_explorer.hpp"
 
 #include "erhe_graph/link.hpp"
 #include "erhe_graph/pin.hpp"
@@ -93,49 +89,19 @@ Graph_window::Graph_window(
     m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);
 
     m_style_editor_window = std::make_unique<Node_style_editor_window>(imgui_renderer, imgui_windows, *m_node_editor.get());
-
-    // Temporary
-    make_placeholder_graph();
 }
 
 Graph_window::~Graph_window() noexcept
 {
 }
 
-void Graph_window::make_placeholder_graph()
+void Graph_window::on_message(Explorer_message& /*message*/)
 {
-    m_nodes.clear();
-    m_graph.clear();
-
-    Graph_node* constant_a_node = make_constant();
-    Graph_node* constant_b_node = make_constant();
-    Graph_node* add_node = make_add();
-
-    m_graph.register_node(constant_a_node);
-    m_graph.register_node(constant_b_node);
-    m_graph.register_node(add_node);
-
-    erhe::graph::Pin*  constant_a_output_pin_0 = &constant_a_node->get_output_pins().at(0);
-    erhe::graph::Pin*  constant_b_output_pin_0 = &constant_b_node->get_output_pins().at(0);
-    erhe::graph::Pin*  add_input_pin_0         = &add_node->get_input_pins().at(0);
-    erhe::graph::Pin*  add_input_pin_1         = &add_node->get_input_pins().at(1);
-    /*erhe::graph::Link* constant_a_to_add_link  = */ m_graph.connect(constant_a_output_pin_0, add_input_pin_0);
-    /*erhe::graph::Link* constant_b_to_add_link  = */ m_graph.connect(constant_b_output_pin_0, add_input_pin_1);
-
-    m_node_editor->SetNodePosition(ax::NodeEditor::NodeId{constant_a_node->get_id()}, ImVec2{  0.0f,   0.0f});
-    m_node_editor->SetNodePosition(ax::NodeEditor::NodeId{constant_b_node->get_id()}, ImVec2{  0.0f, 400.0f});
-    m_node_editor->SetNodePosition(ax::NodeEditor::NodeId{add_node       ->get_id()}, ImVec2{600.0f, 400.0f});
-
-    m_pending_navigate_to_content = true;
-}
-
-void Graph_window::on_message(Explorer_message& message)
-{
-    using namespace erhe::bit;
-    if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_selection)) {
-        std::shared_ptr<Project_file_other> selected_file = m_context.selection->get<Project_file_other>();
-        log_graph->info("Selection changed: {}", selected_file ? selected_file->describe() : std::string{});
-    }
+    //using namespace erhe::bit;
+    //if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_selection)) {
+    //    std::shared_ptr<Project_file_other> selected_file = m_context.selection->get<Project_file_other>();
+    //    log_graph->info("Selection changed: {}", selected_file ? selected_file->describe() : std::string{});
+    //}
 }
 
 auto Graph_window::flags() -> ImGuiWindowFlags
@@ -143,22 +109,21 @@ auto Graph_window::flags() -> ImGuiWindowFlags
     return ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 }
 
-auto Graph_window::make_constant() -> Graph_node*
+void Graph_window::clear()
 {
-    m_nodes.push_back(std::make_shared<Constant>());
-    Graph_node* node = m_nodes.back().get();
-    constexpr uint64_t flags = erhe::Item_flags::visible | erhe::Item_flags::content | erhe::Item_flags::show_in_ui;
-    node->enable_flag_bits(flags);
-    return node;
+    m_graph.clear();
+    m_node_editor.reset();
+    m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);
 }
 
-auto Graph_window::make_add() -> Graph_node*
+auto Graph_window::get_ui_graph() -> Graph&
 {
-    m_nodes.push_back(std::make_shared<Add>());
-    Graph_node* node = m_nodes.back().get();
-    constexpr uint64_t flags = erhe::Item_flags::visible | erhe::Item_flags::content | erhe::Item_flags::show_in_ui;
-    node->enable_flag_bits(flags);
-    return node;
+    return m_graph;
+}
+
+auto Graph_window::get_node_editor() -> ax::NodeEditor::EditorContext*
+{
+    return m_node_editor.get();
 }
 
 void Graph_window::imgui()
@@ -180,7 +145,6 @@ void Graph_window::imgui()
         );
     }
 
-#if 0 // For now - disable creating / removing nodes and links - only explore the graph
     if (m_node_editor->BeginCreate()) {
         ax::NodeEditor::PinId lhs_pin_handle;
         ax::NodeEditor::PinId rhs_pin_handle;
@@ -215,6 +179,7 @@ void Graph_window::imgui()
     m_node_editor->EndCreate();
 
     if (m_node_editor->BeginDelete()) {
+#if 0
         ax::NodeEditor::NodeId node_handle = 0;
         while (m_node_editor->QueryDeletedNode(&node_handle)){
             if (m_node_editor->AcceptDeletedItem()) {
@@ -232,6 +197,7 @@ void Graph_window::imgui()
                 }
             }
         }
+#endif
 
         ax::NodeEditor::LinkId link_handle;
         while (m_node_editor->QueryDeletedLink(&link_handle)) {
@@ -248,7 +214,6 @@ void Graph_window::imgui()
         }
     }
     m_node_editor->EndDelete();
-#endif
 
     if (m_pending_navigate_to_content) {
         m_node_editor->NavigateToContent();

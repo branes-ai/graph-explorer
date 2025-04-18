@@ -30,7 +30,7 @@ auto get_node_edge_name(int direction) -> const char*;
 class Graph_node : public erhe::graph::Node
 {
 public:
-    Graph_node(const char* label);
+    Graph_node(const std::string_view label);
 
     auto accumulate_input_from_links(std::size_t i) -> Payload;
     auto get_output                 (std::size_t i) const -> Payload;

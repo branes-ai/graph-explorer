@@ -347,6 +347,9 @@ target_link_libraries(
     erhe::time
     erhe::ui
     erhe::verify
+
+    domain_flow
+
     #meshoptimizer
     geogram
     imgui

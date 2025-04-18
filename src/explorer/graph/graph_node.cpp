@@ -23,7 +23,7 @@ auto get_node_edge_name(int direction) -> const char*
     }
 }
 
-Graph_node::Graph_node(const char* label)
+Graph_node::Graph_node(const std::string_view label)
     : erhe::graph::Node{label}
 {
 }
@@ -101,8 +101,8 @@ void Graph_node::node_editor(Explorer_context& explorer_context, ax::NodeEditor:
         .context         = explorer_context,
         .node_editor     = node_editor,
         .pin_width       =   0.0f,
-        .pin_label_width =  70.0f,
-        .center_width    = 150.0f,
+        .pin_label_width = 160.0f,
+        .center_width    = 180.0f,
         .icon_font       = explorer_context.imgui_renderer->icon_font()
     };
     context.side_width      = context.pin_width + context.pin_label_width;

@@ -51,6 +51,7 @@ class Hand_tracker;
 class Headset_view;
 class Hotbar;
 class Hud;
+class Graph_window;
 class Icon_set;
 class Id_renderer;
 class Imgui_window_scene_views;
@@ -113,6 +114,7 @@ public:
     Explorer_settings*                      explorer_settings     {nullptr};
     Explorer_windows*                       explorer_windows      {nullptr};
     Fly_camera_tool*                        fly_camera_tool       {nullptr};
+    Graph_window*                           graph_window          {nullptr};
     Grid_tool*                              grid_tool             {nullptr};
 #if defined(ERHE_XR_LIBRARY_OPENXR)
     Hand_tracker*                           hand_tracker          {nullptr};

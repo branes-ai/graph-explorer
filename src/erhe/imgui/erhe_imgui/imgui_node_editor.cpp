@@ -1105,7 +1105,7 @@ void ed::EditorContext::Begin(const char* id, const ImVec2& size)
         if (m_Canvas.Begin(id, canvasSize))
             m_Canvas.End();
 
-        LoadSettings();
+        //LoadSettings();
         m_IsInitialized = true;
     }
 

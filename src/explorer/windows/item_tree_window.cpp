@@ -1096,6 +1096,9 @@ void Item_tree::imgui_item_node(const std::shared_ptr<erhe::Item_base>& item)
 void Item_tree::imgui_tree(float ui_scale)
 {
     ERHE_PROFILE_FUNCTION();
+    if (!m_root) {
+        return;
+    }
 
     ///ImGuiStyle& style = ImGui::GetCurrentContext()->Style;
     ///ImVec4 not_selected_color     = style.Colors[ImGuiCol_WindowBg];

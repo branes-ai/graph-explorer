@@ -2,17 +2,9 @@
 
 #include "graph/graph.hpp"
 
-#include "erhe_commands/command.hpp"
-//#include "erhe_dataformat/dataformat.hpp"
-#include "erhe_graph/graph.hpp"
-#include "erhe_graph/node.hpp"
 #include "erhe_imgui/imgui_window.hpp"
 
-#include <array>
 #include <memory>
-#include <string>
-#include <string_view>
-#include <vector>
 
 namespace erhe::commands {
     class Commands;
@@ -53,20 +45,18 @@ public:
     void imgui() override;
     auto flags() -> ImGuiWindowFlags override;
 
-private:
-    void make_placeholder_graph();
-    auto make_constant         () -> Graph_node*;
-    auto make_add              () -> Graph_node*;
+    auto get_ui_graph   () -> Graph&;
+    auto get_node_editor() -> ax::NodeEditor::EditorContext*;
 
+    void clear();
+
+private:
     void on_message(Explorer_message& message);
 
     Explorer_context&                               m_context;
     Graph                                           m_graph;
     std::unique_ptr<ax::NodeEditor::EditorContext>  m_node_editor;
-
     std::unique_ptr<Node_style_editor_window>       m_style_editor_window;
-    std::vector<std::shared_ptr<Graph_node>>        m_nodes;
-
     bool                                            m_pending_navigate_to_content{false};
 };
 
