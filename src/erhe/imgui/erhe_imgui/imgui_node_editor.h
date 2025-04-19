@@ -16,6 +16,7 @@
 
 //------------------------------------------------------------------------------
 # include <imgui/imgui.h>
+# include <imgui/imgui_internal.h> // ImRect
 # include <cstdint> // std::uintXX_t
 # include <utility> // std::move
 
@@ -386,6 +387,10 @@ public:
     int BreakLinks(NodeId nodeId); // Break all links connected to this node
     int BreakLinks(PinId pinId); // Break all links connected to this pin
 
+    ImRect GetSelectionBounds();
+    ImRect GetContentBounds();
+
+    void NavigateTo(const ImRect& bounds);
     void NavigateToContent(float duration = -1);
     void NavigateToSelection(bool zoomIn = false, float duration = -1);
 

@@ -16,6 +16,7 @@
 #include "erhe_imgui/imgui_node_editor.h"
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 
 namespace explorer {
 
@@ -126,6 +127,11 @@ auto Graph_window::get_node_editor() -> ax::NodeEditor::EditorContext*
     return m_node_editor.get();
 }
 
+void Graph_window::fit()
+{
+    m_pending_navigate_to_content = true;
+}
+
 void Graph_window::imgui()
 {
     m_node_editor->Begin("Graph", ImVec2{0.0f, 0.0f});
@@ -215,7 +221,10 @@ void Graph_window::imgui()
     m_node_editor->EndDelete();
 
     if (m_pending_navigate_to_content) {
-        m_node_editor->NavigateToContent();
+        ImVec2 padding{50.0f, 50.0f};
+        ImRect content_bounds = m_node_editor->GetContentBounds();
+        content_bounds.Expand(padding);
+        m_node_editor->NavigateTo(content_bounds);
         m_pending_navigate_to_content = false;
     }
 
