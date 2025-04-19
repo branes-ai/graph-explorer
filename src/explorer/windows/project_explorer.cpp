@@ -9,6 +9,7 @@
 
 #include "erhe_commands/commands.hpp"
 #include "erhe_file/file.hpp"
+#include "erhe_graph/pin.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
 #include "erhe_imgui/imgui_node_editor.h"
 
@@ -252,7 +253,7 @@ auto Domain_flow_graph_file::load() -> bool
     try {
         std::string file_name = erhe::file::to_string(get_source_path());
         m_dfg = std::make_shared<DomainFlowGraph>(file_name);
-        m_dfg->graph.load(file_name);
+        m_dfg->load(file_name);
         return true;
     } catch (...) {
         return false;
@@ -286,20 +287,32 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, No
 
         m_ui_nodes.insert({node_id, ui_node});
 
+        log_graph->info("node {}, {}", node_id, node.getName());
         for (std::size_t j = 0, end = node.getNrInputs(); j < end; ++j) {
+            log_graph->info("  input slot {}, {}", j, node.operandType.at(j));
             ui_node->make_input_pin(0, node.operandType.at(j));
         }
         for (std::size_t j = 0, end = node.getNrOutputs(); j < end; ++j) {
+            log_graph->info("  output slot {}, {}", j, node.resultType.at(j));
             ui_node->make_output_pin(0, node.resultType.at(j));
         }
         ui_graph.register_node(ui_node.get());
     }
 
-    //for (auto i : m_dfg->graph.edges()) {
-    //    const std::shared_ptr<Graph_node>& from = m_ui_nodes.at(i.first.first);
-    //    const std::shared_ptr<Graph_node>& to   = m_ui_nodes.at(i.first.second);
-    //    const DomainFlowEdge& edge = i.second;
-    //}
+    for (const auto& [edgeId, edge] : m_dfg->graph.edges()) {
+        const std::size_t src_node_id = edgeId.first;
+        const std::size_t dst_node_id = edgeId.second;
+        const std::size_t src_slot    = edge.srcSlot;
+        const std::size_t dst_slot    = edge.dstSlot;
+        log_graph->info("  node link from node {} slot {} to node {} slot {}", src_node_id, src_slot, dst_node_id, dst_slot);
+        // TODO This does not current locate output pins
+        // 
+        // const std::shared_ptr<Graph_node>& src_node    = m_ui_nodes.at(src_node_id);
+        // const std::shared_ptr<Graph_node>& dst_node    = m_ui_nodes.at(dst_node_id);
+        // erhe::graph::Pin&                  src_pin     = src_node->get_output_pins().at(src_slot);
+        // erhe::graph::Pin&                  dst_pin     = dst_node->get_input_pins ().at(dst_slot);
+        // ui_graph.connect(&src_pin, &dst_pin);
+    }
     graph_window->fit();
 }
 

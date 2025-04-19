@@ -129,9 +129,10 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
         using namespace sw::dfa;
         std::size_t node_id = ui_node.get_payload();
         const DomainFlowNode& node = m_dfg->graph.node(node_id);
-        m_property_editor.add_entry("Name",  [&node]() { ImGui::TextUnformatted(node.getName().c_str()); });
-        m_property_editor.add_entry("Op",    [&node]() { std::stringstream ss; ss << node.getOperator(); ImGui::TextUnformatted(ss.str().c_str()); });
-        m_property_editor.add_entry("Depth", [&node]() { ImGui::Text("%d", node.getDepth());});
+        m_property_editor.add_entry("Node ID", [node_id]() { ImGui::Text("%zu", node_id); });
+        m_property_editor.add_entry("Name",    [&node  ]() { ImGui::TextUnformatted(node.getName().c_str()); });
+        m_property_editor.add_entry("Op",      [&node  ]() { std::stringstream ss; ss << node.getOperator(); ImGui::TextUnformatted(ss.str().c_str()); });
+        m_property_editor.add_entry("Depth",   [&node  ]() { ImGui::Text("%d", node.getDepth());});
 
         const std::size_t attribute_count = node.getNrAttributes();
         if (attribute_count > 0) {
@@ -142,7 +143,6 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
             m_property_editor.pop_group();
         }
 
-#if 0 // TODO currently crashes
         const auto complexity = node.getArithmeticComplexity();
         if (!complexity.empty()) {
             m_property_editor.push_group("Arithmetic Complexity", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
@@ -151,19 +151,22 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
                 std::string label = fmt::format("[{}]", i++);
                 m_property_editor.add_entry(
                     label,
-                    [&entry]() {
+                    [entry]() {
+                        const std::string   s1    = std::get<0>(entry);
+                        const std::string   s2    = std::get<1>(entry);
+                        const std::uint64_t value = std::get<2>(entry);
+
                         ImGui::Text(
                             "%s %s %zu",
-                            std::get<0>(entry).c_str(),
-                            std::get<1>(entry).c_str(),
-                            static_cast<std::size_t>(std::get<2>(entry))
+                            s1.c_str(),
+                            s2.c_str(),
+                            static_cast<std::size_t>(value)
                         );
                     }
                 );
             }
             m_property_editor.pop_group();
         }
-#endif
 
         m_property_editor.pop_group();
     }
