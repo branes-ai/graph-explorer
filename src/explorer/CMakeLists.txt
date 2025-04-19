@@ -262,8 +262,6 @@ erhe_target_sources_grouped(
     tools/transform/transform_tool.hpp
     tools/transform/transform_tool_settings.cpp
     tools/transform/transform_tool_settings.hpp
-    xr/null_headset_view.cpp
-    xr/null_headset_view.hpp
     windows.ini
     windows/animation_curve.cpp
     windows/animation_curve.hpp
@@ -311,6 +309,29 @@ erhe_target_sources_grouped(
 if (${ERHE_USE_PRECOMPILED_HEADERS})
     target_precompile_headers(${_target} REUSE_FROM erhe_pch)
 endif ()
+
+if (${ERHE_XR_LIBRARY} STREQUAL "openxr")
+    erhe_target_sources_grouped(
+        ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
+        xr/controller_visualization.cpp
+        xr/controller_visualization.hpp
+        xr/hand_tracker.cpp
+        xr/hand_tracker.hpp
+        xr/headset_view.cpp
+        xr/headset_view.hpp
+        xr/headset_view_resources.cpp
+        xr/headset_view_resources.hpp
+        xr/theremin.cpp
+        xr/theremin.hpp
+    )
+else ()
+    erhe_target_sources_grouped(
+        ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
+        xr/null_headset_view.cpp
+        xr/null_headset_view.hpp
+    )
+endif ()
+
 target_link_libraries(
     ${_target}
     PRIVATE
