@@ -10,12 +10,18 @@
 #include "erhe_profile/profile.hpp"
 #include "erhe_verify/verify.hpp"
 
+#include <dfa/dfa.hpp>
+
 #include <fmt/format.h>
 
 #if defined(ERHE_GUI_LIBRARY_IMGUI)
 #   include <imgui/imgui.h>
 #   include <imgui/misc/cpp/imgui_stdlib.h>
 #endif
+
+#include <string>
+#include <sstream>
+
 
 namespace explorer {
 
@@ -37,6 +43,11 @@ void Node_properties_window::on_begin()
 void Node_properties_window::on_end()
 {
     ImGui::PopStyleVar();
+}
+
+void Node_properties_window::set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg)
+{
+    m_dfg = dfg;
 }
 
 void Node_properties_window::item_flags(const std::shared_ptr<erhe::Item_base>& item)
@@ -107,18 +118,63 @@ void Node_properties_window::item_properties(const std::shared_ptr<erhe::Item_ba
     m_property_editor.pop_group();
 }
 
-void Node_properties_window::node_properties(Graph_node& node)
+void Node_properties_window::node_properties(Graph_node& ui_node)
 {
-    m_property_editor.push_group("Node", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
+
+    if (m_dfg) {
+        m_property_editor.push_group("Domain Flow Node", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
+        using namespace sw::dfa;
+        std::size_t node_id = ui_node.get_payload();
+        const DomainFlowNode& node = m_dfg->graph.node(node_id);
+        m_property_editor.add_entry("Name",  [&node]() { ImGui::TextUnformatted(node.getName().c_str()); });
+        m_property_editor.add_entry("Op",    [&node]() { std::stringstream ss; ss << node.getOperator(); ImGui::TextUnformatted(ss.str().c_str()); });
+        m_property_editor.add_entry("Depth", [&node]() { ImGui::Text("%d", node.getDepth());});
+
+        const std::size_t attribute_count = node.getNrAttributes();
+        if (attribute_count > 0) {
+            m_property_editor.push_group("Attributes", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
+            for (const auto& [key, value] : node.getAttributes()) {
+                m_property_editor.add_entry(key, [&value]() { ImGui::TextUnformatted(value.c_str());});
+            }
+            m_property_editor.pop_group();
+        }
+
+#if 0 // TODO currently crashes
+        const auto complexity = node.getArithmeticComplexity();
+        if (!complexity.empty()) {
+            m_property_editor.push_group("Arithmetic Complexity", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
+            int i = 0;
+            for (const auto& entry : complexity) {
+                std::string label = fmt::format("[{}]", i++);
+                m_property_editor.add_entry(
+                    label,
+                    [&entry]() {
+                        ImGui::Text(
+                            "%s %s %zu",
+                            std::get<0>(entry).c_str(),
+                            std::get<1>(entry).c_str(),
+                            static_cast<std::size_t>(std::get<2>(entry))
+                        );
+                    }
+                );
+            }
+            m_property_editor.pop_group();
+        }
+#endif
+
+        m_property_editor.pop_group();
+    }
+
+    m_property_editor.push_group("Node Visual", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
     m_property_editor.add_entry(
         "Inputs",
-        [&node]() {
-            if (ImGui::BeginCombo("##inputs", get_node_edge_name(node.m_input_pin_edge))) {
+        [&ui_node]() {
+            if (ImGui::BeginCombo("##inputs", get_node_edge_name(ui_node.m_input_pin_edge))) {
                 for (int i = 0; i < Node_edge::count; ++i) {
-                    bool selected = (node.m_input_pin_edge == i);
+                    bool selected = (ui_node.m_input_pin_edge == i);
                     ImGui::Selectable(get_node_edge_name(i), &selected, ImGuiSelectableFlags_None);
                     if (selected) {
-                        node.m_input_pin_edge = i;
+                        ui_node.m_input_pin_edge = i;
                     }
                 }
                 ImGui::EndCombo();
@@ -127,13 +183,13 @@ void Node_properties_window::node_properties(Graph_node& node)
     );
     m_property_editor.add_entry(
         "Outputs",
-        [&node]() {
-            if (ImGui::BeginCombo("##outputs", get_node_edge_name(node.m_output_pin_edge))) {
+        [&ui_node]() {
+            if (ImGui::BeginCombo("##outputs", get_node_edge_name(ui_node.m_output_pin_edge))) {
                 for (int i = 0; i < Node_edge::count; ++i) {
-                    bool selected = (node.m_output_pin_edge == i);
+                    bool selected = (ui_node.m_output_pin_edge == i);
                     ImGui::Selectable(get_node_edge_name(i), &selected, ImGuiSelectableFlags_None);
                     if (selected) {
-                        node.m_output_pin_edge = i;
+                        ui_node.m_output_pin_edge = i;
                     }
                 }
                 ImGui::EndCombo();
@@ -149,6 +205,8 @@ void Node_properties_window::imgui()
 
     m_property_editor.reset();
 
+
+#if 0
     const auto& selection = m_context.selection->get_selection();
     int id = 0;
     for (const auto& item : selection) {
@@ -157,6 +215,7 @@ void Node_properties_window::imgui()
         ERHE_VERIFY(item);
         item_properties(item);
     }
+#endif
 
     const auto selected_graph_node = m_context.selection->get<erhe::graph::Node>();
     if (selected_graph_node) {

@@ -23,64 +23,25 @@ auto get_node_edge_name(int direction) -> const char*
     }
 }
 
-Graph_node::Graph_node(const std::string_view label)
+Graph_node::Graph_node(const std::string_view label, std::size_t payload)
     : erhe::graph::Node{label}
+    , m_payload        {payload}
 {
 }
 
-// For given slot / pin, accumulates payload from all connected links
-auto Graph_node::accumulate_input_from_links(const std::size_t i) -> Payload
+[[nodiscard]] auto Graph_node::get_payload() -> size_t
 {
-    erhe::graph::Pin& input_pin = get_input_pins().at(i);
-
-    if (input_pin.is_sink()) { // && pull
-        Payload sum{};
-        for (erhe::graph::Link* link : input_pin.get_links()) {
-            erhe::graph::Pin*  source_pin        = link->get_source();
-            std::size_t        slot              = source_pin->get_slot();
-            erhe::graph::Node* source_node       = source_pin->get_owner_node();
-            Graph_node*        source_graph_node = dynamic_cast<Graph_node*>(source_node);
-            sum += source_graph_node->get_output(slot);
-        }
-        return sum;
-    }
-    return {};
-}
-
-auto Graph_node::get_input(std::size_t i) const -> Payload
-{
-    return m_input_payloads.at(i);
-}
-
-void Graph_node::set_input(std::size_t i, Payload value)
-{
-    m_input_payloads.at(i) = value;
-}
-
-auto Graph_node::get_output(const std::size_t i) const -> Payload
-{
-    return m_output_payloads.at(i);
-}
-
-void Graph_node::set_output(const std::size_t i, Payload payload)
-{
-    m_output_payloads.at(i) = payload;
+    return m_payload;
 }
 
 void Graph_node::make_input_pin(std::size_t key, std::string_view name)
 {
-    m_input_payloads.emplace_back();
     base_make_input_pin(key, name);
 }
 
 void Graph_node::make_output_pin(std::size_t key, std::string_view name)
 {
-    m_output_payloads.emplace_back();
     base_make_output_pin(key, name);
-}
-
-void Graph_node::evaluate(Graph&)
-{
 }
 
 void Graph_node::imgui()

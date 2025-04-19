@@ -21,10 +21,6 @@ erhe_target_sources_grouped(
     explorer_windows.cpp
     explorer_windows.hpp
     erhe.ini
-    graph/constant.cpp
-    graph/constant.hpp
-    graph/add.cpp
-    graph/add.hpp
     graph/graph.cpp
     graph/graph.hpp
     graph/graph_node.cpp
@@ -33,8 +29,6 @@ erhe_target_sources_grouped(
     graph/graph_window.hpp
     graph/node_properties.cpp
     graph/node_properties.hpp
-    graph/payload.cpp
-    graph/payload.hpp
     graphics/gradients.cpp
     graphics/gradients.hpp
     graphics/icon_rasterization.cpp

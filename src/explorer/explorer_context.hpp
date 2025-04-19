@@ -60,6 +60,7 @@ class Material_paint_tool;
 class Material_preview;
 class Mesh_memory;
 class Move_tool;
+class Node_properties_window;
 class Operation_stack;
 class Paint_tool;
 class Physics_tool;
@@ -129,6 +130,7 @@ public:
     Material_preview*                       material_preview      {nullptr};
     Mesh_memory*                            mesh_memory           {nullptr};
     Move_tool*                              move_tool             {nullptr};
+    Node_properties_window*                 node_properties_window{nullptr};
     Operation_stack*                        operation_stack       {nullptr};
     Paint_tool*                             paint_tool            {nullptr};
     Physics_tool*                           physics_tool          {nullptr};

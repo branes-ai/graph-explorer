@@ -1007,6 +1007,7 @@ public:
         m_explorer_context.material_preview       = m_material_preview      .get();
         m_explorer_context.mesh_memory            = m_mesh_memory           .get();
         m_explorer_context.move_tool              = m_move_tool             .get();
+        m_explorer_context.node_properties_window = m_node_properties_window.get();
         m_explorer_context.operation_stack        = m_operation_stack       .get();
         m_explorer_context.paint_tool             = m_paint_tool            .get();
         m_explorer_context.physics_tool           = m_physics_tool          .get();

@@ -2,8 +2,9 @@
 
 #include "explorer_context.hpp"
 #include "explorer_log.hpp"
-#include "graph/graph_window.hpp"
 #include "graph/graph_node.hpp"
+#include "graph/graph_window.hpp"
+#include "graph/node_properties.hpp"
 #include "windows/item_tree_window.hpp"
 
 #include "erhe_commands/commands.hpp"
@@ -12,7 +13,6 @@
 #include "erhe_imgui/imgui_node_editor.h"
 
 #include <dfa/dfa.hpp>
-#include <util/data_file.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -259,7 +259,7 @@ auto Domain_flow_graph_file::load() -> bool
     }
 }
 
-void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
+void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, Node_properties_window* node_properties_window)
 {
     using namespace sw::dfa;
 
@@ -268,12 +268,13 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
 
     ui_graph.clear();
     node_editor->ClearSelection(); // TODO graph_window.clear()
+    node_properties_window->set_domain_flow_graph(m_dfg);
 
     for (auto i : m_dfg->graph.nodes()) {
         const std::size_t     node_id = i.first;
         const DomainFlowNode& node    = i.second;
 
-        std::shared_ptr<Graph_node> ui_node = std::make_shared<Graph_node>(node.getName());
+        std::shared_ptr<Graph_node> ui_node = std::make_shared<Graph_node>(node.getName(), node_id);
         constexpr uint64_t flags = erhe::Item_flags::visible | erhe::Item_flags::content | erhe::Item_flags::show_in_ui;
         ui_node->enable_flag_bits(flags);
 
@@ -308,7 +309,7 @@ auto Project_explorer::try_show(Domain_flow_graph_file& dfg) -> bool
     std::string import_label = fmt::format("Show'{}'", erhe::file::to_string(dfg.get_source_path()));
     if (ImGui::MenuItem(import_label.c_str())) {
         dfg.load();
-        dfg.show_in_graph_window(m_context.graph_window);
+        dfg.show_in_graph_window(m_context.graph_window, m_context.node_properties_window);
         ImGui::CloseCurrentPopup();
         return true;
     }

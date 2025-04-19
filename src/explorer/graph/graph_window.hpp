@@ -16,6 +16,7 @@ namespace erhe::graph {
 namespace erhe::imgui {
     class Imgui_windows;
 }
+
 namespace ax::NodeEditor {
     class EditorContext;
 }
@@ -53,11 +54,11 @@ public:
 private:
     void on_message(Explorer_message& message);
 
-    Explorer_context&                               m_context;
-    Graph                                           m_graph;
-    std::unique_ptr<ax::NodeEditor::EditorContext>  m_node_editor;
-    std::unique_ptr<Node_style_editor_window>       m_style_editor_window;
-    bool                                            m_pending_navigate_to_content{false};
+    Explorer_context&                              m_context;
+    Graph                                          m_graph;
+    std::unique_ptr<ax::NodeEditor::EditorContext> m_node_editor;
+    std::unique_ptr<Node_style_editor_window>      m_style_editor_window;
+    bool                                           m_pending_navigate_to_content{false};
 };
 
 } // namespace explorer

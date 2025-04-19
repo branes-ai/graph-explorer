@@ -128,7 +128,6 @@ auto Graph_window::get_node_editor() -> ax::NodeEditor::EditorContext*
 
 void Graph_window::imgui()
 {
-    m_graph.evaluate();
     m_node_editor->Begin("Graph", ImVec2{0.0f, 0.0f});
 
     for (erhe::graph::Node* node : m_graph.get_nodes()) {

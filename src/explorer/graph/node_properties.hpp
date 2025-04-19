@@ -13,6 +13,10 @@ namespace erhe::imgui {
     class Imgui_windows;
 }
 
+namespace sw::dfa { 
+    struct DomainFlowGraph;
+}
+
 namespace explorer {
 
 class Explorer_context;
@@ -32,13 +36,16 @@ public:
     void on_begin() override;
     void on_end  () override;
 
+    void set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg);
+
 private:
     void item_flags     (const std::shared_ptr<erhe::Item_base>& item);
     void item_properties(const std::shared_ptr<erhe::Item_base>& item);
     void node_properties(Graph_node& node);
 
-    Explorer_context& m_context;
-    Property_editor   m_property_editor;
+    Explorer_context&                         m_context;
+    Property_editor                           m_property_editor;
+    std::shared_ptr<sw::dfa::DomainFlowGraph> m_dfg;
 };
 
 } // namespace explorer

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "graph/payload.hpp"
 #include "erhe_graph/node.hpp"
 
 #include <imgui/imgui.h>
@@ -30,20 +29,15 @@ auto get_node_edge_name(int direction) -> const char*;
 class Graph_node : public erhe::graph::Node
 {
 public:
-    Graph_node(const std::string_view label);
+    Graph_node(const std::string_view label, std::size_t payload);
 
-    auto accumulate_input_from_links(std::size_t i) -> Payload;
-    auto get_output                 (std::size_t i) const -> Payload;
-    auto get_input                  (std::size_t i) const -> Payload;
-    void set_input                  (std::size_t i, Payload payload);
-    void set_output                 (std::size_t i, Payload payload);
-    void make_input_pin             (std::size_t key, std::string_view name);
-    void make_output_pin            (std::size_t key, std::string_view name);
+    void make_input_pin (std::size_t key, std::string_view name);
+    void make_output_pin(std::size_t key, std::string_view name);
 
     void node_editor(Explorer_context& context, ax::NodeEditor::EditorContext& node_editor);
 
-    virtual void evaluate(Graph& graph);
-    virtual void imgui   ();
+    [[nodiscard]] auto get_payload() -> size_t;
+    virtual void imgui();
 
 protected:
     friend class Node_properties_window;
@@ -69,10 +63,9 @@ protected:
 
     static constexpr std::size_t pin_key_todo = 1;
 
-    std::vector<Payload> m_input_payloads;
-    std::vector<Payload> m_output_payloads;
-    int                  m_input_pin_edge {Node_edge::left};
-    int                  m_output_pin_edge{Node_edge::right};
+    std::size_t m_payload;
+    int         m_input_pin_edge {Node_edge::left};
+    int         m_output_pin_edge{Node_edge::right};
 };
 
 } // namespace explorer

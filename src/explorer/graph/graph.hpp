@@ -7,8 +7,6 @@ namespace explorer {
 class Graph : public erhe::graph::Graph
 {
 public:
-    void evaluate();
-private:
 };
 
 } // namespace editor
