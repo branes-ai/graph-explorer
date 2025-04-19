@@ -62,8 +62,8 @@ void Graph_node::node_editor(Explorer_context& explorer_context, ax::NodeEditor:
         .context         = explorer_context,
         .node_editor     = node_editor,
         .pin_width       =   0.0f,
-        .pin_label_width = 160.0f,
-        .center_width    = 180.0f,
+        .pin_label_width =  60.0f,
+        .center_width    = 140.0f,
         .icon_font       = explorer_context.imgui_renderer->icon_font()
     };
     context.side_width      = context.pin_width + context.pin_label_width;

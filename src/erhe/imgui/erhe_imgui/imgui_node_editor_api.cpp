@@ -529,6 +529,21 @@ int EditorContext::BreakLinks(PinId pinId)
     return m_impl->BreakLinks(pinId);
 }
 
+ImRect EditorContext::GetSelectionBounds()
+{
+    return m_impl->GetContentBounds();
+}
+
+ImRect EditorContext::GetContentBounds()
+{
+    return m_impl->GetContentBounds();
+}
+
+void EditorContext::NavigateTo(const ImRect& bounds)
+{
+    m_impl->NavigateTo(bounds, true, 0.0f);
+}
+
 void EditorContext::NavigateToContent(float duration)
 {
     m_impl->NavigateTo(m_impl->GetContentBounds(), true, duration);

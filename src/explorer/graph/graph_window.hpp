@@ -50,6 +50,7 @@ public:
     auto get_node_editor() -> ax::NodeEditor::EditorContext*;
 
     void clear();
+    void fit  ();
 
 private:
     void on_message(Explorer_message& message);

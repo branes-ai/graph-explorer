@@ -1,9 +1,11 @@
 #include "graph/node_properties.hpp"
 #include "graph/graph_node.hpp"
+#include "graph/graph_window.hpp"
 #include "explorer_context.hpp"
 #include "tools/selection_tool.hpp"
 
 #include "erhe_defer/defer.hpp"
+#include "erhe_imgui/imgui_node_editor.h"
 #include "erhe_imgui/imgui_windows.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
 #include "erhe_bit/bit_helpers.hpp"
@@ -120,6 +122,7 @@ void Node_properties_window::item_properties(const std::shared_ptr<erhe::Item_ba
 
 void Node_properties_window::node_properties(Graph_node& ui_node)
 {
+    ax::NodeEditor::EditorContext* node_editor = m_context.graph_window->get_node_editor();
 
     if (m_dfg) {
         m_property_editor.push_group("Domain Flow Node", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
@@ -166,6 +169,14 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
     }
 
     m_property_editor.push_group("Node Visual", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
+    m_property_editor.add_entry(
+        "Position",
+        [&ui_node, node_editor]() {
+            ImVec2 position = node_editor->GetNodePosition(ui_node.get_id());
+            ImGui::DragFloat2("##", &position.x, 0.1f);
+        }
+    );
+
     m_property_editor.add_entry(
         "Inputs",
         [&ui_node]() {

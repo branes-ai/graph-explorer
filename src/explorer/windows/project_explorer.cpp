@@ -263,13 +263,14 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, No
 {
     using namespace sw::dfa;
 
+    graph_window->clear();
+
     erhe::graph::Graph&            ui_graph    = graph_window->get_ui_graph();
     ax::NodeEditor::EditorContext* node_editor = graph_window->get_node_editor();
 
-    ui_graph.clear();
-    node_editor->ClearSelection(); // TODO graph_window.clear()
     node_properties_window->set_domain_flow_graph(m_dfg);
 
+    constexpr float column_width = 400.0f;
     for (auto i : m_dfg->graph.nodes()) {
         const std::size_t     node_id = i.first;
         const DomainFlowNode& node    = i.second;
@@ -277,6 +278,11 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, No
         std::shared_ptr<Graph_node> ui_node = std::make_shared<Graph_node>(node.getName(), node_id);
         constexpr uint64_t flags = erhe::Item_flags::visible | erhe::Item_flags::content | erhe::Item_flags::show_in_ui;
         ui_node->enable_flag_bits(flags);
+
+        // TODO better automatic layout
+        ImVec2 ui_node_position{node.getDepth() * column_width, 0.0f};
+
+        node_editor->SetNodePosition(ui_node->get_id(), ui_node_position);
 
         m_ui_nodes.insert({node_id, ui_node});
 
@@ -294,7 +300,7 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, No
     //    const std::shared_ptr<Graph_node>& to   = m_ui_nodes.at(i.first.second);
     //    const DomainFlowEdge& edge = i.second;
     //}
-
+    graph_window->fit();
 }
 
 //void Domain_flow_graph_file::make_link(Graph_node* from, Graph_node* to)
