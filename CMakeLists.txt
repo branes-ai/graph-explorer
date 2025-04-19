@@ -148,7 +148,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME              domain_flow
     #VERSION          0.1.1
-    GIT_TAG           more-inline
+    GIT_TAG           main
     GITHUB_REPOSITORY branes-ai/domain_flow
     OPTIONS           "DOMAINFLOW_BUILD_TESTS OFF"
 )
