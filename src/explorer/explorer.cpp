@@ -13,6 +13,7 @@
 
 #include "graph/graph_window.hpp"
 #include "graph/node_properties.hpp"
+#include "graph/node_convex_hull_visualization.hpp"
 #include "graphics/icon_set.hpp"
 #include "operations/operation_stack.hpp"
 #include "renderers/id_renderer.hpp"
@@ -583,29 +584,30 @@ public:
 
             auto some_windows_task = taskflow.emplace([this]()
             {
-                m_operation_stack        = std::make_unique<Operation_stack                 >(*m_executor.get(),       *m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(), m_explorer_context);
-                m_project_explorer       = std::make_unique<Project_explorer                >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_composer_window        = std::make_unique<Composer_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_selection_window       = std::make_unique<Selection_window                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_settings_window        = std::make_unique<Settings_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_clipboard_window       = std::make_unique<Clipboard_window                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_commands_window        = std::make_unique<Commands_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_layers_window          = std::make_unique<Layers_window                   >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_network_window         = std::make_unique<Network_window                  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_operations             = std::make_unique<Operations                      >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(), m_explorer_context, *m_explorer_message_bus.get());
-                m_physics_window         = std::make_unique<Physics_window                  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_post_processing_window = std::make_unique<Post_processing_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_properties             = std::make_unique<Properties                      >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_graph_window           = std::make_unique<Graph_window                    >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context, *m_explorer_message_bus.get());
-                m_node_properties_window = std::make_unique<Node_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_tool_properties_window = std::make_unique<Tool_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_viewport_config_window = std::make_unique<Viewport_config_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
-                m_logs                   = std::make_unique<erhe::imgui::Logs               >(*m_commands.get(),       *m_imgui_renderer.get());
-                m_log_settings_window    = std::make_unique<erhe::imgui::Log_settings_window>(*m_imgui_renderer.get(), *m_imgui_windows.get(),  *m_logs.get());
-                m_tail_log_window        = std::make_unique<erhe::imgui::Tail_log_window    >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  *m_logs.get());
-                m_frame_log_window       = std::make_unique<erhe::imgui::Frame_log_window   >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  *m_logs.get());
-                m_performance_window     = std::make_unique<erhe::imgui::Performance_window >(*m_imgui_renderer.get(), *m_imgui_windows.get());
-                m_pipelines              = std::make_unique<erhe::imgui::Pipelines          >(*m_imgui_renderer.get(), *m_imgui_windows.get());
+                m_operation_stack                = std::make_unique<Operation_stack                 >(*m_executor.get(),       *m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(), m_explorer_context);
+                m_project_explorer               = std::make_unique<Project_explorer                >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_composer_window                = std::make_unique<Composer_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_selection_window               = std::make_unique<Selection_window                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_settings_window                = std::make_unique<Settings_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_clipboard_window               = std::make_unique<Clipboard_window                >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_commands_window                = std::make_unique<Commands_window                 >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_layers_window                  = std::make_unique<Layers_window                   >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_network_window                 = std::make_unique<Network_window                  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_operations                     = std::make_unique<Operations                      >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(), m_explorer_context, *m_explorer_message_bus.get());
+                m_physics_window                 = std::make_unique<Physics_window                  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_post_processing_window         = std::make_unique<Post_processing_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_properties                     = std::make_unique<Properties                      >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_graph_window                   = std::make_unique<Graph_window                    >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context, *m_explorer_message_bus.get());
+                m_node_convex_hull_visualization = std::make_unique<Node_convex_hull_visualization  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context, *m_explorer_message_bus.get());
+                m_node_properties_window         = std::make_unique<Node_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_tool_properties_window         = std::make_unique<Tool_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_viewport_config_window         = std::make_unique<Viewport_config_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
+                m_logs                           = std::make_unique<erhe::imgui::Logs               >(*m_commands.get(),       *m_imgui_renderer.get());
+                m_log_settings_window            = std::make_unique<erhe::imgui::Log_settings_window>(*m_imgui_renderer.get(), *m_imgui_windows.get(),  *m_logs.get());
+                m_tail_log_window                = std::make_unique<erhe::imgui::Tail_log_window    >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  *m_logs.get());
+                m_frame_log_window               = std::make_unique<erhe::imgui::Frame_log_window   >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  *m_logs.get());
+                m_performance_window             = std::make_unique<erhe::imgui::Performance_window >(*m_imgui_renderer.get(), *m_imgui_windows.get());
+                m_pipelines                      = std::make_unique<erhe::imgui::Pipelines          >(*m_imgui_renderer.get(), *m_imgui_windows.get());
             })  .name("Some windows")
                 .succeed(imgui_renderer_task, imgui_windows_task);
 
@@ -997,34 +999,35 @@ public:
 #if defined(ERHE_XR_LIBRARY_OPENXR)
         m_explorer_context.hand_tracker           = m_hand_tracker          .get();
 #endif
-        m_explorer_context.headset_view           = m_headset_view          .get();
-        m_explorer_context.hotbar                 = m_hotbar                .get();
-        m_explorer_context.hud                    = m_hud                   .get();
-        m_explorer_context.icon_set               = m_icon_set              .get();
-        m_explorer_context.id_renderer            = m_id_renderer           .get();
-        m_explorer_context.input_state            = m_input_state           .get();
-        m_explorer_context.material_paint_tool    = m_material_paint_tool   .get();
-        m_explorer_context.material_preview       = m_material_preview      .get();
-        m_explorer_context.mesh_memory            = m_mesh_memory           .get();
-        m_explorer_context.move_tool              = m_move_tool             .get();
-        m_explorer_context.node_properties_window = m_node_properties_window.get();
-        m_explorer_context.operation_stack        = m_operation_stack       .get();
-        m_explorer_context.paint_tool             = m_paint_tool            .get();
-        m_explorer_context.physics_tool           = m_physics_tool          .get();
-        m_explorer_context.post_processing        = m_post_processing       .get();
-        m_explorer_context.programs               = m_programs              .get();
-        m_explorer_context.rotate_tool            = m_rotate_tool           .get();
-        m_explorer_context.scale_tool             = m_scale_tool            .get();
-        m_explorer_context.scene_builder          = m_scene_builder         .get();
-        m_explorer_context.scene_commands         = m_scene_commands        .get();
-        m_explorer_context.selection              = m_selection             .get();
-        m_explorer_context.selection_tool         = m_selection_tool        .get();
-        m_explorer_context.settings_window        = m_settings_window       .get();
-        m_explorer_context.time                   = m_time                  .get();
-        m_explorer_context.tools                  = m_tools                 .get();
-        m_explorer_context.transform_tool         = m_transform_tool        .get();
-        m_explorer_context.viewport_config_window = m_viewport_config_window.get();
-        m_explorer_context.scene_views            = m_viewport_scene_views  .get();
+        m_explorer_context.headset_view                   = m_headset_view          .get();
+        m_explorer_context.hotbar                         = m_hotbar                .get();
+        m_explorer_context.hud                            = m_hud                   .get();
+        m_explorer_context.icon_set                       = m_icon_set              .get();
+        m_explorer_context.id_renderer                    = m_id_renderer           .get();
+        m_explorer_context.input_state                    = m_input_state           .get();
+        m_explorer_context.material_paint_tool            = m_material_paint_tool   .get();
+        m_explorer_context.material_preview               = m_material_preview      .get();
+        m_explorer_context.mesh_memory                    = m_mesh_memory           .get();
+        m_explorer_context.move_tool                      = m_move_tool             .get();
+        m_explorer_context.node_convex_hull_visualization = m_node_convex_hull_visualization.get();
+        m_explorer_context.node_properties_window         = m_node_properties_window.get();
+        m_explorer_context.operation_stack                = m_operation_stack       .get();
+        m_explorer_context.paint_tool                     = m_paint_tool            .get();
+        m_explorer_context.physics_tool                   = m_physics_tool          .get();
+        m_explorer_context.post_processing                = m_post_processing       .get();
+        m_explorer_context.programs                       = m_programs              .get();
+        m_explorer_context.rotate_tool                    = m_rotate_tool           .get();
+        m_explorer_context.scale_tool                     = m_scale_tool            .get();
+        m_explorer_context.scene_builder                  = m_scene_builder         .get();
+        m_explorer_context.scene_commands                 = m_scene_commands        .get();
+        m_explorer_context.selection                      = m_selection             .get();
+        m_explorer_context.selection_tool                 = m_selection_tool        .get();
+        m_explorer_context.settings_window                = m_settings_window       .get();
+        m_explorer_context.time                           = m_time                  .get();
+        m_explorer_context.tools                          = m_tools                 .get();
+        m_explorer_context.transform_tool                 = m_transform_tool        .get();
+        m_explorer_context.viewport_config_window         = m_viewport_config_window.get();
+        m_explorer_context.scene_views                    = m_viewport_scene_views  .get();
     }
 
     auto on_key_event(const erhe::window::Input_event& input_event) -> bool override
@@ -1135,6 +1138,7 @@ public:
     std::unique_ptr<Post_processing_window          >        m_post_processing_window;
     std::unique_ptr<Properties                      >        m_properties;
     std::unique_ptr<Graph_window                    >        m_graph_window;
+    std::unique_ptr<Node_convex_hull_visualization  >        m_node_convex_hull_visualization;
     std::unique_ptr<Node_properties_window          >        m_node_properties_window;
     std::unique_ptr<Tool_properties_window          >        m_tool_properties_window;
     std::unique_ptr<Viewport_config_window          >        m_viewport_config_window;

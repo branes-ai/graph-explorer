@@ -117,6 +117,16 @@ void Graph_window::clear()
     m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);
 }
 
+void Graph_window::set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg)
+{
+    m_dfg = dfg;
+}
+
+auto Graph_window::get_domain_flow_graph() const -> sw::dfa::DomainFlowGraph*
+{
+    return m_dfg.get();
+}
+
 auto Graph_window::get_ui_graph() -> Graph&
 {
     return m_graph;

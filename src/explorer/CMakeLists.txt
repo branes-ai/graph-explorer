@@ -29,6 +29,8 @@ erhe_target_sources_grouped(
     graph/graph_window.hpp
     graph/node_properties.cpp
     graph/node_properties.hpp
+    graph/node_convex_hull_visualization.cpp
+    graph/node_convex_hull_visualization.hpp
     graphics/gradients.cpp
     graphics/gradients.hpp
     graphics/icon_rasterization.cpp

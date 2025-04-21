@@ -36,8 +36,6 @@ public:
     void on_begin() override;
     void on_end  () override;
 
-    void set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg);
-
 private:
     void item_flags     (const std::shared_ptr<erhe::Item_base>& item);
     void item_properties(const std::shared_ptr<erhe::Item_base>& item);

@@ -47,11 +47,6 @@ void Node_properties_window::on_end()
     ImGui::PopStyleVar();
 }
 
-void Node_properties_window::set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg)
-{
-    m_dfg = dfg;
-}
-
 void Node_properties_window::item_flags(const std::shared_ptr<erhe::Item_base>& item)
 {
     ERHE_PROFILE_FUNCTION();
@@ -124,11 +119,12 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
 {
     ax::NodeEditor::EditorContext* node_editor = m_context.graph_window->get_node_editor();
 
-    if (m_dfg) {
+    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
+    if (dfg != nullptr) {
         m_property_editor.push_group("Domain Flow Node", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
         using namespace sw::dfa;
         std::size_t node_id = ui_node.get_payload();
-        const DomainFlowNode& node = m_dfg->graph.node(node_id);
+        const DomainFlowNode& node = dfg->graph.node(node_id);
         m_property_editor.add_entry("Node ID", [node_id]() { ImGui::Text("%zu", node_id); });
         m_property_editor.add_entry("Name",    [&node  ]() { ImGui::TextUnformatted(node.getName().c_str()); });
         m_property_editor.add_entry("Op",      [&node  ]() { std::stringstream ss; ss << node.getOperator(); ImGui::TextUnformatted(ss.str().c_str()); });
@@ -152,16 +148,28 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
                 m_property_editor.add_entry(
                     label,
                     [entry]() {
+                        bool first = true;
+                        std::stringstream ss;
                         const std::string   s1    = std::get<0>(entry);
                         const std::string   s2    = std::get<1>(entry);
                         const std::uint64_t value = std::get<2>(entry);
+                        if (!s1.empty()) {
+                            ss << s1;
+                            first = false;
+                        }
+                        if (!s2.empty()) {
+                            if (!first) {
+                                ss << " | ";
+                            }
+                            ss << s2;
+                            first = false;
+                        }
+                        if (!first) {
+                            ss << " | ";
+                        }
+                        ss << static_cast<std::size_t>(value);
 
-                        ImGui::Text(
-                            "%s %s %zu",
-                            s1.c_str(),
-                            s2.c_str(),
-                            static_cast<std::size_t>(value)
-                        );
+                        ImGui::TextUnformatted(ss.str().c_str());
                     }
                 );
             }

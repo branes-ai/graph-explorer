@@ -5,6 +5,8 @@ src/editor/user.ini
 src/editor/erhe_init_graph.dot
 src/explorer/erhe_init_graph.dot
 src/explorer/NodeEditor.json
+src/explorer/cache/bvh/*
+!src/explorer/cache/bvh/keep
 src/editor/cache/bvh/*
 src/editor/windows/IconsMaterialDesignIcons.h
 src/editor/res/fonts/materialdesignicons-webfont.ttf

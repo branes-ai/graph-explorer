@@ -68,7 +68,7 @@ public:
     auto get_type_name() const -> std::string_view override;
 
     auto load                () -> bool;
-    void show_in_graph_window(Graph_window* graph_window, Node_properties_window* node_properties_window);
+    void show_in_graph_window(Graph_window* graph_window);
 
 private:
     std::shared_ptr<sw::dfa::DomainFlowGraph>          m_dfg;

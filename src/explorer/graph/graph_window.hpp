@@ -17,6 +17,10 @@ namespace erhe::imgui {
     class Imgui_windows;
 }
 
+namespace sw::dfa {
+    struct DomainFlowGraph;
+}
+
 namespace ax::NodeEditor {
     class EditorContext;
 }
@@ -46,8 +50,10 @@ public:
     void imgui() override;
     auto flags() -> ImGuiWindowFlags override;
 
-    auto get_ui_graph   () -> Graph&;
-    auto get_node_editor() -> ax::NodeEditor::EditorContext*;
+    [[nodiscard]] auto get_domain_flow_graph() const -> sw::dfa::DomainFlowGraph*;
+    void set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg);
+    auto get_ui_graph         () -> Graph&;
+    auto get_node_editor      () -> ax::NodeEditor::EditorContext*;
 
     void clear();
     void fit  ();
@@ -60,6 +66,7 @@ private:
     std::unique_ptr<ax::NodeEditor::EditorContext> m_node_editor;
     std::unique_ptr<Node_style_editor_window>      m_style_editor_window;
     bool                                           m_pending_navigate_to_content{false};
+    std::shared_ptr<sw::dfa::DomainFlowGraph>      m_dfg;
 };
 
 } // namespace explorer

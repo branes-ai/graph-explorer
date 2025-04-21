@@ -260,7 +260,7 @@ auto Domain_flow_graph_file::load() -> bool
     }
 }
 
-void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, Node_properties_window* node_properties_window)
+void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
 {
     using namespace sw::dfa;
 
@@ -269,7 +269,7 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, No
     erhe::graph::Graph&            ui_graph    = graph_window->get_ui_graph();
     ax::NodeEditor::EditorContext* node_editor = graph_window->get_node_editor();
 
-    node_properties_window->set_domain_flow_graph(m_dfg);
+    graph_window->set_domain_flow_graph(m_dfg);
 
     constexpr float column_width = 400.0f;
     for (auto i : m_dfg->graph.nodes()) {
@@ -305,30 +305,22 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window, No
         const std::size_t src_slot    = edge.srcSlot;
         const std::size_t dst_slot    = edge.dstSlot;
         log_graph->info("  node link from node {} slot {} to node {} slot {}", src_node_id, src_slot, dst_node_id, dst_slot);
-        // TODO This does not current locate output pins
-        // 
-        // const std::shared_ptr<Graph_node>& src_node    = m_ui_nodes.at(src_node_id);
-        // const std::shared_ptr<Graph_node>& dst_node    = m_ui_nodes.at(dst_node_id);
-        // erhe::graph::Pin&                  src_pin     = src_node->get_output_pins().at(src_slot);
-        // erhe::graph::Pin&                  dst_pin     = dst_node->get_input_pins ().at(dst_slot);
-        // ui_graph.connect(&src_pin, &dst_pin);
+
+        const std::shared_ptr<Graph_node>& src_node = m_ui_nodes.at(src_node_id);
+        const std::shared_ptr<Graph_node>& dst_node = m_ui_nodes.at(dst_node_id);
+        erhe::graph::Pin&                  src_pin  = src_node->get_output_pins().at(src_slot);
+        erhe::graph::Pin&                  dst_pin  = dst_node->get_input_pins ().at(dst_slot);
+        ui_graph.connect(&src_pin, &dst_pin);
     }
     graph_window->fit();
 }
-
-//void Domain_flow_graph_file::make_link(Graph_node* from, Graph_node* to)
-//{
-//    erhe::graph::Pin*  from_pin = &(from->get_input_pins().at(0));
-//    erhe::graph::Pin*  to_pin   = &(to  ->get_input_pins().at(0));
-//    erhe::graph::Link* link     = m_graph.connect(from_pin, to_pin);
-//}
 
 auto Project_explorer::try_show(Domain_flow_graph_file& dfg) -> bool
 {
     std::string import_label = fmt::format("Show'{}'", erhe::file::to_string(dfg.get_source_path()));
     if (ImGui::MenuItem(import_label.c_str())) {
         dfg.load();
-        dfg.show_in_graph_window(m_context.graph_window, m_context.node_properties_window);
+        dfg.show_in_graph_window(m_context.graph_window);
         ImGui::CloseCurrentPopup();
         return true;
     }
