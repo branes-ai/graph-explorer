@@ -32,7 +32,7 @@ Node_properties_window::Node_properties_window(
     erhe::imgui::Imgui_windows&  imgui_windows,
     Explorer_context&            explorer_context
 )
-    : Imgui_window{imgui_renderer, imgui_windows, "Node Properties", "node_pproperties"}
+    : Imgui_window{imgui_renderer, imgui_windows, "Node Properties", "node_properties"}
     , m_context   {explorer_context}
 {
 }

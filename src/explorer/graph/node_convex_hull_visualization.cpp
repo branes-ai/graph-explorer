@@ -40,7 +40,7 @@ Node_convex_hull_visualization::Node_convex_hull_visualization(
     Explorer_context&            explorer_context,
     Explorer_message_bus&        explorer_message_bus
 )
-    : Imgui_window{imgui_renderer, imgui_windows, "Node Properties", "node_pproperties"}
+    : Imgui_window{imgui_renderer, imgui_windows, "Node Properties", "node_properties"}
     , m_context   {explorer_context}
 {
     explorer_message_bus.add_receiver(
@@ -77,6 +77,14 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     }
     m_visualized_node = &node;
 
+    std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
+    std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> scene_lock{scene_root->item_host_mutex};
+
+    if (m_root) {
+        m_root->set_parent(nullptr);
+        m_root.reset();
+    }
+
     // Extract points from node
     std::vector<glm::vec3> convex_hull_points;
     const sw::dfa::PointSet points = node.getConvexHull();
@@ -90,8 +98,6 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         log_graph->info("  {}, {}, {}", p[0], p[1], p[2]);
         convex_hull_points.emplace_back(p[0], p[1], p[2]);
     }
-
-    std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
 
     // Create material
     if (!m_material) {
@@ -116,7 +122,8 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         erhe::geometry::Geometry::process_flag_build_edges |
         erhe::geometry::Geometry::process_flag_compute_facet_centroids |
         erhe::geometry::Geometry::process_flag_compute_smooth_vertex_normals |
-        erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates;
+        erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates |
+        erhe::geometry::Geometry::process_flag_merge_coplanar_neighbors;
     m_geometry->process(geometry_process_flags);
 
     // Build buffer mesh
@@ -130,29 +137,11 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         },
         .buffer_info = mesh_memory.buffer_info
     };
-    //erhe::primitive::Buffer_mesh buffer_mesh{};
-    //erhe::primitive::Element_mappings dummy; // TODO make Element_mappings optional
-    //const bool buffer_mesh_ok = erhe::primitive::build_buffer_mesh(
-    //    buffer_mesh,
-    //    convex_hull_geo_mesh,
-    //    build_info,
-    //    dummy,
-    //    erhe::primitive::Normal_style::polygon_normals
-    //);
-    //ERHE_VERIFY(buffer_mesh_ok); // TODO
-    //erhe::primitive::Primitive primitive{std::move(buffer_mesh), m_material};
     erhe::primitive::Primitive primitive{m_geometry, m_material, build_info, erhe::primitive::Normal_style::polygon_normals};
-
 
     ERHE_VERIFY(primitive.render_shape->make_raytrace(convex_hull_geo_mesh));
     const glm::vec3 root_pos{0.0, 1.0f, 0.0f};
 
-    std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> scene_lock{scene_root->item_host_mutex};
-
-    if (m_root) {
-        m_root->set_parent(nullptr);
-        m_root.reset();
-    }
     m_root = std::make_shared<erhe::scene::Node>("root");
 
     m_root->enable_flag_bits(erhe::Item_flags::content | erhe::Item_flags::visible | erhe::Item_flags::show_in_ui);

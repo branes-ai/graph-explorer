@@ -988,7 +988,8 @@ void Debug_visualizations::mesh_labels(const Render_context& context, erhe::scen
                     { { p0, p } }
                 );
 
-                const std::string label_text = fmt::format("{}: {}", vertex, p0);
+                //const std::string label_text = fmt::format("{}: {:.2f}, {:.2f}, {:.2f}", vertex, p0.x, p0.y, p0.z);
+                const std::string label_text = fmt::format("{}", vertex);
                 const uint32_t    text_color = erhe::math::convert_float4_to_uint32(m_vertex_label_text_color);
                 label(context, clip_from_world, world_from_node, p, text_color, label_text);
                 if (++label_count >= m_max_labels) {

@@ -27,7 +27,7 @@ Node_properties_window::Node_properties_window(
     erhe::imgui::Imgui_windows&  imgui_windows,
     Editor_context&              editor_context
 )
-    : Imgui_window{imgui_renderer, imgui_windows, "Node Properties", "node_pproperties"}
+    : Imgui_window{imgui_renderer, imgui_windows, "Node Properties", "node_properties"}
     , m_context   {editor_context}
 {
 }
