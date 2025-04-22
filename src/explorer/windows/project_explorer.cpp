@@ -308,7 +308,23 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
 
         const std::shared_ptr<Graph_node>& src_node = m_ui_nodes.at(src_node_id);
         const std::shared_ptr<Graph_node>& dst_node = m_ui_nodes.at(dst_node_id);
-        erhe::graph::Pin&                  src_pin  = src_node->get_output_pins().at(src_slot);
+		if (src_node == nullptr) {
+			log_graph->error("src_node is null");
+			continue;
+		}
+		if (src_node->get_output_pins().size() <= src_slot) {
+			log_graph->error("src_node {} output pin {} out of range", src_node_id, src_slot);
+			continue;
+		}
+		if (dst_node == nullptr) {
+			log_graph->error("dst_node is null");
+			continue;
+		}
+		if (dst_node->get_input_pins().size() <= dst_slot) {
+			log_graph->error("dst_node {} input pin {} out of range", dst_node_id, dst_slot);
+			continue;
+		}
+        erhe::graph::Pin&                  src_pin = src_node->get_output_pins().at(src_slot);
         erhe::graph::Pin&                  dst_pin  = dst_node->get_input_pins ().at(dst_slot);
         ui_graph.connect(&src_pin, &dst_pin);
     }
