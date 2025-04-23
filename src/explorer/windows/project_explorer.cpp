@@ -10,6 +10,7 @@
 #include "erhe_commands/commands.hpp"
 #include "erhe_file/file.hpp"
 #include "erhe_graph/pin.hpp"
+#include "erhe_imgui/imgui_renderer.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
 #include "erhe_imgui/imgui_node_editor.h"
 
@@ -271,7 +272,7 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
 
     graph_window->set_domain_flow_graph(m_dfg);
 
-    constexpr float column_width = 400.0f;
+    constexpr float column_width = 650.0f;
     for (auto i : m_dfg->graph.nodes()) {
         const std::size_t     node_id = i.first;
         const DomainFlowNode& node    = i.second;
@@ -335,8 +336,12 @@ auto Project_explorer::try_show(Domain_flow_graph_file& dfg) -> bool
 {
     std::string import_label = fmt::format("Show'{}'", erhe::file::to_string(dfg.get_source_path()));
     if (ImGui::MenuItem(import_label.c_str())) {
-        dfg.load();
-        dfg.show_in_graph_window(m_context.graph_window);
+        m_context.imgui_renderer->at_end_of_frame(
+            [this, &dfg]() {
+                dfg.load();
+                dfg.show_in_graph_window(m_context.graph_window);
+            }
+        );
         ImGui::CloseCurrentPopup();
         return true;
     }

@@ -24,22 +24,21 @@ class Node_style_editor_window : public erhe::imgui::Imgui_window
 {
 public:
     Node_style_editor_window(
-        erhe::imgui::Imgui_renderer&   imgui_renderer,
-        erhe::imgui::Imgui_windows&    imgui_windows,
-        ax::NodeEditor::EditorContext& node_editor
+        erhe::imgui::Imgui_renderer& imgui_renderer,
+        erhe::imgui::Imgui_windows&  imgui_windows
     )
         : erhe::imgui::Imgui_window{imgui_renderer, imgui_windows, "Graph Style", "graph_style"}
     {
+    }
+
+    void update(ax::NodeEditor::EditorContext& node_editor)
+    {
         Property_editor& e = m_property_editor;
         auto& style = node_editor.GetStyle();
-        style.PinArrowSize  = 14.0f;
-        style.PinArrowWidth = 14.0f;
-        style.LinkStrength  = 30.0f;
-        style.NodePadding   = ImVec4{20.0f, 5.0f, 20.0f, 5.0f};
-        e.add_entry("Node Pad 0",    [&style](){ ImGui::DragFloat("##Node Pad 0",    &style.NodePadding.x,      0.1f, 0.0f, 20.0f); });
-        e.add_entry("Node Pad 1",    [&style](){ ImGui::DragFloat("##Node Pad 1",    &style.NodePadding.y,      0.1f, 0.0f, 20.0f); });
-        e.add_entry("Node Pad 2",    [&style](){ ImGui::DragFloat("##Node Pad 2",    &style.NodePadding.z,      0.1f, 0.0f, 20.0f); });
-        e.add_entry("Node Pad 3",    [&style](){ ImGui::DragFloat("##Node Pad 3",    &style.NodePadding.w,      0.1f, 0.0f, 20.0f); });
+        e.add_entry("Node Pad L",    [&style](){ ImGui::DragFloat("##Node Pad L",    &style.NodePadding.x,      0.1f, 0.0f, 20.0f); });
+        e.add_entry("Node Pad T",    [&style](){ ImGui::DragFloat("##Node Pad T",    &style.NodePadding.y,      0.1f, 0.0f, 20.0f); });
+        e.add_entry("Node Pad R",    [&style](){ ImGui::DragFloat("##Node Pad R",    &style.NodePadding.z,      0.1f, 0.0f, 20.0f); });
+        e.add_entry("Node Pad B",    [&style](){ ImGui::DragFloat("##Node Pad B",    &style.NodePadding.w,      0.1f, 0.0f, 20.0f); });
         e.add_entry("Pin Round",     [&style](){ ImGui::DragFloat("##Pin Round",     &style.PinRounding,        0.1f, 0.0f, 40.0f); });
         e.add_entry("Pin Border",    [&style](){ ImGui::DragFloat("##Pin Border",    &style.PinBorderWidth,     0.1f, 0.0f, 15.0f); });
         e.add_entry("Pin Rad",       [&style](){ ImGui::DragFloat("##Pin Rad",       &style.PinRadius,          0.1f, 0.0f, 40.0f); });
@@ -86,10 +85,9 @@ Graph_window::Graph_window(
         }
     );
 
-    ax::NodeEditor::Config config;
-    m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);
+    m_style_editor_window = std::make_unique<Node_style_editor_window>(imgui_renderer, imgui_windows);
 
-    m_style_editor_window = std::make_unique<Node_style_editor_window>(imgui_renderer, imgui_windows, *m_node_editor.get());
+    clear();
 }
 
 Graph_window::~Graph_window() noexcept
@@ -112,9 +110,19 @@ auto Graph_window::flags() -> ImGuiWindowFlags
 
 void Graph_window::clear()
 {
+    //ax::NodeEditor::Config config;
+    m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);
+
     m_graph.clear();
     m_node_editor.reset();
     m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);
+    m_style_editor_window->update(*m_node_editor.get());
+
+    ax::NodeEditor::Style& style = m_node_editor->GetStyle();
+    style.NodePadding   = ImVec4{20.0f, 10.0f, 20.0f, 10.0f};
+    style.PinArrowSize  = 14.0f;
+    style.PinArrowWidth = 14.0f;
+    style.LinkStrength  = 30.0f;
 }
 
 void Graph_window::set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg)
