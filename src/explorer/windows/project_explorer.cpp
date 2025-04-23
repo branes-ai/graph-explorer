@@ -255,6 +255,8 @@ auto Domain_flow_graph_file::load() -> bool
         std::string file_name = erhe::file::to_string(get_source_path());
         m_dfg = std::make_shared<DomainFlowGraph>(file_name);
         m_dfg->load(file_name);
+        // distribute the constants throughout the pipeline
+		m_dfg->graph.distributeConstants();
         return true;
     } catch (...) {
         return false;
@@ -272,7 +274,11 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
 
     graph_window->set_domain_flow_graph(m_dfg);
 
+    // each node that is in a column increments the row it which it is placed
+    // we need to keep track of the nodes printed in each column
+	std::map<int, int> column_row_count;
     constexpr float column_width = 650.0f;
+	constexpr float row_height   = 250.0f;
     for (auto i : m_dfg->graph.nodes()) {
         const std::size_t     node_id = i.first;
         const DomainFlowNode& node    = i.second;
@@ -281,8 +287,15 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
         constexpr uint64_t flags = erhe::Item_flags::visible | erhe::Item_flags::content | erhe::Item_flags::show_in_ui;
         ui_node->enable_flag_bits(flags);
 
-        // TODO better automatic layout
-        ImVec2 ui_node_position{node.getDepth() * column_width, 0.0f};
+		int depth = node.getDepth();
+		if (column_row_count.find(depth) == column_row_count.end()) {
+			column_row_count[depth] = 0;
+		}
+        else {
+            column_row_count[depth]++;
+        }
+		int row = column_row_count[depth];
+        ImVec2 ui_node_position{depth * column_width, row * row_height};
 
         node_editor->SetNodePosition(ui_node->get_id(), ui_node_position);
 
