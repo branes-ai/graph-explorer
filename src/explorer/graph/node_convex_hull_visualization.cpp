@@ -28,11 +28,6 @@
 
 #include <dfa/dfa.hpp>
 
-//#if defined(ERHE_GUI_LIBRARY_IMGUI)
-//#   include <imgui/imgui.h>
-//#   include <imgui/misc/cpp/imgui_stdlib.h>
-//#endif
-
 namespace explorer {
 
 Node_convex_hull_visualization::Node_convex_hull_visualization(
@@ -41,7 +36,7 @@ Node_convex_hull_visualization::Node_convex_hull_visualization(
     Explorer_context&            explorer_context,
     Explorer_message_bus&        explorer_message_bus
 )
-    : Imgui_window{imgui_renderer, imgui_windows, "Node Properties", "node_properties"}
+    : Imgui_window{imgui_renderer, imgui_windows, "Node Convex Hull Visualization", "node_convex_hull_visualization"}
     , m_context   {explorer_context}
 {
     explorer_message_bus.add_receiver(
@@ -82,8 +77,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> scene_lock{scene_root->item_host_mutex};
 
     if (m_root) {
-        m_root->set_parent(nullptr);
-        m_root.reset();
+        m_root->recursive_remove();
     }
 
     // Extract points from node
@@ -161,8 +155,11 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     }
     m_root->set_parent(scene_root->get_scene().get_root_node());
 
-    m_context.fly_camera_tool->frame(aabb);
+    m_context.fly_camera_tool->frame(aabb, Frame_mode::look_at_with_standard_y_up);
 
+    // TODO Test
+    //m_context.fly_camera_tool->frame(aabb, Frame_mode::keep_orientation);
+    //m_context.fly_camera_tool->frame(aabb, Frame_mode::choose_direction_based_on_bbox);
 }
 
 void Node_convex_hull_visualization::imgui()

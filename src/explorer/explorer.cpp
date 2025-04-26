@@ -957,7 +957,8 @@ public:
             }
         }
 #endif
-        m_tools->set_priority_tool(m_physics_tool.get());
+        //m_tools->set_priority_tool(m_physics_tool.get());
+        m_tools->set_priority_tool(m_fly_camera_tool.get());
     }
 
     ~Explorer()

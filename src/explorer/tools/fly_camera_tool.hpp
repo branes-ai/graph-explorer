@@ -146,8 +146,8 @@ public:
 
 private:
     Explorer_context& m_context;
-    Variable        m_variable;
-    float           m_scale;
+    Variable          m_variable;
+    float             m_scale;
 };
 
 class Fly_camera_serialization_command : public erhe::commands::Command
@@ -160,6 +160,12 @@ public:
 private:
     Explorer_context& m_context;
     bool              m_store;
+};
+
+enum class Frame_mode : unsigned int {
+    keep_orientation               = 0,
+    look_at_with_standard_y_up     = 1,
+    choose_direction_based_on_bbox = 2
 };
 
 class Fly_camera_tool
@@ -212,7 +218,7 @@ public:
     auto try_start_track         () -> bool;
     auto track                   () -> bool;
     auto zoom                    (int64_t timestamp_ns, float delta) -> bool;
-    auto frame                   (const erhe::math::Bounding_box& bbox) -> bool;
+    auto frame                   (const erhe::math::Bounding_box& bbox, Frame_mode mode) -> bool;
     void serialize_transform     (bool store);
 
     void synthesize_input();
@@ -264,6 +270,8 @@ private:
     erhe::scene::Camera*              m_camera{nullptr};
     erhe::scene::Camera*              m_last_camera{nullptr};
     erhe::scene::Node*                m_node{nullptr};
+
+    bool                              m_update_pivot_on_start_tumble{false};
 
     class Event
     {

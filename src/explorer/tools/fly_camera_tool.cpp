@@ -332,7 +332,7 @@ auto Fly_camera_frame_command::try_call() -> bool
         return false;
     }
 
-    m_context.fly_camera_tool->frame(bbox);
+    m_context.fly_camera_tool->frame(bbox, Frame_mode::look_at_with_standard_y_up);
     return true;
 }
 #pragma endregion Fly_camera_frame_command
@@ -426,6 +426,7 @@ void Fly_camera_tool::synthesize_input()
         erhe::window::Input_event{
             .type = erhe::window::Input_event_type::no_event,
             .timestamp_ns = timestamp_ns,
+            .u = { .dummy = false }
         }
     );
 
@@ -526,13 +527,25 @@ void Fly_camera_tool::synthesize_input()
     );
 }
 
-auto Fly_camera_tool::frame(const erhe::math::Bounding_box& bbox) -> bool
+auto Fly_camera_tool::frame(const erhe::math::Bounding_box& bbox, Frame_mode mode) -> bool
 {
+    if (bbox.is_valid()) {
+        m_tumble_pivot = bbox.center();
+    } else {
+        return false;
+    }
+
     Scene_view* scene_view = get_last_hover_scene_view();
     if (scene_view == nullptr) {
         return false;
     }
     erhe::scene::Camera* camera = m_last_camera; // get_camera();
+    if (camera == nullptr) {
+        const Viewport_scene_view* viewport_scene_view = scene_view->as_viewport_scene_view();
+        if (viewport_scene_view != nullptr) {
+            camera = viewport_scene_view->get_camera().get();
+        }
+    }
     if (camera == nullptr) {
         return false;
     }
@@ -545,32 +558,62 @@ auto Fly_camera_tool::frame(const erhe::math::Bounding_box& bbox) -> bool
     if (viewport_scene_view == nullptr) {
         return false;
     }
-    erhe::math::Viewport viewport = viewport_scene_view->projection_viewport();
-
-    glm::vec3 camera_position = camera_node->position_in_world();
-    glm::vec3 target_position = bbox.center();
-    glm::vec3 direction = target_position - camera_position;
-    glm::vec3 direction_normalized = glm::normalize(target_position - camera_position);
-    float size = glm::length(bbox.diagonal());
-    erhe::scene::Projection::Fov_sides fov_sides = camera->projection()->get_fov_sides(viewport);
+    const erhe::math::Viewport               viewport  = viewport_scene_view->projection_viewport();
+    const glm::vec3                          diagonal  = bbox.diagonal();
+    const float                              size      = glm::length(diagonal);
+    const erhe::scene::Projection::Fov_sides fov_sides = camera->projection()->get_fov_sides(viewport);
     float min_fov_side = std::numeric_limits<float>::max();
     for (float fov_side : { fov_sides.left, fov_sides.right, fov_sides.up, fov_sides.down }) {
         min_fov_side = std::min(std::abs(fov_side), min_fov_side);
     }
-    ////float tan_fov_side = std::tanf(min_fov_side);
-    float tan_fov_side = tanf(min_fov_side);
-    float fit_distance = size / (2.0f * tan_fov_side);
-    glm::vec3 new_position = target_position - fit_distance * direction_normalized;
-    glm::mat4 new_world_from_node = erhe::math::create_look_at(new_position, target_position, glm::vec3{0.0f, 1.0f, 0.0});
-    camera_node->set_world_from_node(new_world_from_node);
+    const float tan_fov_side = tanf(min_fov_side);
+    const float fit_distance = size / (2.0f * tan_fov_side);
 
-    //const glm::vec3 old_view_position                   = m_camera_controller->get_position();
-    //const glm::vec3 target_position                     = aabb.center();
-    //const glm::vec3 from_target_to_old_view_position    = old_view_position - target_position;
-    //const glm::vec3 target_to_view_direction_normalized = glm::normalize(from_target_to_old_view_position);
-    //const glm::vec3 new_view_position                   = target_position + frame_distance * target_to_view_direction_normalized;
-    //
-    //m_camera_controller->set_position(new_view_position);
+    const glm::vec3 old_camera_position                   = camera_node->position_in_world();
+    const glm::vec3 target_position                       = bbox.center();
+    const glm::vec3 target_to_camera_direction            = old_camera_position - target_position;
+    const glm::vec3 target_to_camera_direction_normalized = glm::normalize(target_to_camera_direction);
+
+    switch (mode) {
+        case Frame_mode::keep_orientation: {
+            const glm::vec3             new_camera_position = target_position + fit_distance * target_to_camera_direction_normalized;
+            const glm::vec3             translation         = new_camera_position - old_camera_position;
+            erhe::scene::Trs_transform& transform           = camera_node->parent_from_node_transform();
+            transform.translate_by(translation);
+            break;
+        }
+
+        case Frame_mode::look_at_with_standard_y_up: {
+            const glm::vec3 new_camera_position = target_position + fit_distance * target_to_camera_direction_normalized;
+            const glm::mat4 new_world_from_node = erhe::math::create_look_at(
+                new_camera_position,
+                target_position,
+                glm::vec3{0.0f, 1.0f, 0.0}
+            );
+            camera_node->set_world_from_node(new_world_from_node);
+            break;
+        }
+
+        case Frame_mode::choose_direction_based_on_bbox: {
+            const glm::vec3 chosen_direction = (diagonal.x > diagonal.z)
+                ? glm::vec3{1.0f, 1.0f, 8.0f}
+                : glm::vec3{8.0f, 1.0f, 1.0f};
+            const glm::vec3 new_camera_position = target_position - fit_distance * glm::normalize(chosen_direction);
+            const glm::mat4 new_world_from_node = erhe::math::create_look_at(
+                new_camera_position,
+                target_position,
+                glm::vec3{0.0f, 1.0f, 0.0}
+            );
+            camera_node->set_world_from_node(new_world_from_node);
+            break;
+        }
+
+        default: {
+            ERHE_FATAL("Invalid Frame_mode()");
+            break;
+        }
+    }
+
     return true;
 }
 
@@ -693,6 +736,8 @@ Fly_camera_tool::Fly_camera_tool(
     ini.get("velocity_max_delta", config.velocity_max_delta);
     ini.get("sensitivity",        m_sensitivity);
 
+    ini.get("move_speed", m_camera_controller->move_speed);
+
     set_base_priority(c_priority);
     set_description  ("Fly Camera");
     set_flags        (Tool_flags::background);
@@ -739,7 +784,7 @@ Fly_camera_tool::Fly_camera_tool(
     commands.bind_command_to_mouse_drag(&m_turn_command, erhe::window::Mouse_button_left, false, 0);
 
     commands.register_command(&m_tumble_command);
-    commands.bind_command_to_mouse_drag(&m_tumble_command, erhe::window::Mouse_button_left, true, erhe::window::Key_modifier_bit_menu);
+    commands.bind_command_to_mouse_drag(&m_tumble_command, erhe::window::Mouse_button_right, true);
 
     commands.register_command(&m_track_command);
     commands.bind_command_to_mouse_drag(&m_track_command, erhe::window::Mouse_button_middle, true, erhe::window::Key_modifier_bit_menu);
@@ -977,16 +1022,14 @@ auto Fly_camera_tool::try_start_tumble() -> bool
         return false;
     }
 
-    const Hover_entry* hover = scene_view->get_nearest_hover(Hover_entry::content_bit | Hover_entry::grid_bit);
-    if (hover == nullptr) {
-        return false;
+    if (m_update_pivot_on_start_tumble) {
+        const Hover_entry* hover = scene_view->get_nearest_hover(Hover_entry::content_bit | Hover_entry::grid_bit);
+        if (hover != nullptr) {
+            if (hover->position.has_value()) {
+                m_tumble_pivot = hover->position;
+            }
+        }
     }
-
-    if (!hover->position.has_value()) {
-        return false;
-    }
-
-    m_tumble_pivot = hover->position;
     return true;
 }
 

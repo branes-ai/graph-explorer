@@ -177,11 +177,11 @@ void Scene_builder::setup_cameras(
 {
     const auto& camera_a = make_camera(
         "Camera A",
-        vec3{0.0f, 1.0f, 3.0f},
+        vec3{0.0f, 10.0f, 30.0f},
         vec3{0.0f, 0.5f, 0.0f}
     );
     camera_a->projection()->z_near = 0.1f;
-    camera_a->projection()->z_far = 500.0f;
+    camera_a->projection()->z_far = 1200.0f;
     camera_a->set_shadow_range(500.0f);
     //// camera_a->set_wireframe_color(glm::vec4{1.0f, 0.6f, 0.3f, 1.0f});
 
@@ -192,7 +192,7 @@ void Scene_builder::setup_cameras(
         vec3{ 0.0f, 0.5f, 0.0f}
     );
     camera_b->projection()->z_near = 0.1f;
-    camera_b->projection()->z_far = 500.0f;
+    camera_b->projection()->z_far = 1200.0f;
     camera_b->set_shadow_range(500.0f);
     //// camera_b->set_wireframe_color(glm::vec4{0.3f, 0.6f, 1.00f, 1.0f});
 #endif

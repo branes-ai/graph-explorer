@@ -20,6 +20,11 @@ void Tool::on_message(Explorer_message& message)
     if (test_all_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_hover_scene_view)) {
         set_hover_scene_view(message.scene_view);
     }
+    if (test_all_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_render_scene_view)) {
+        if ((m_last_hover_scene_view == nullptr) && (message.scene_view != nullptr)) {
+            m_last_hover_scene_view = message.scene_view;
+        }
+    }
 }
 
 auto Tool::get_priority() const -> int
