@@ -106,6 +106,11 @@ public:
     void gyro();
     void chamfer();
 
+#if defined(ERHE_GLTF_LIBRARY_FASTGLTF)
+    void export_gltf();
+    void export_callback(const char* const* filelist, int filter);
+#endif
+
 private:
     [[nodiscard]] auto count_selected_meshes() const -> size_t;
     [[nodiscard]] auto mesh_context() -> Mesh_operation_parameters;
@@ -141,6 +146,9 @@ private:
     erhe::commands::Lambda_command m_gyro_command;
     erhe::commands::Lambda_command m_chamfer_command;
 
+#if defined(ERHE_GLTF_LIBRARY_FASTGLTF)
+    erhe::commands::Lambda_command m_export_gltf_command;
+#endif
     Scene_view*                    m_hover_scene_view     {nullptr};
     Scene_view*                    m_last_hover_scene_view{nullptr};
 
