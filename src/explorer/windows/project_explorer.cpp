@@ -251,6 +251,9 @@ auto Domain_flow_graph_file::load() -> bool
 {
     using namespace sw::dfa;
 
+    m_dfg.reset();
+    m_ui_nodes.clear();
+
     try {
         std::string file_name = erhe::file::to_string(get_source_path());
         m_dfg = std::make_shared<DomainFlowGraph>(file_name);
@@ -259,6 +262,7 @@ auto Domain_flow_graph_file::load() -> bool
 		m_dfg->graph.distributeConstants();
         return true;
     } catch (...) {
+        log_graph->warn("Domain_flow_graph_file::load() - exception");
         return false;
     }
 }
@@ -268,11 +272,10 @@ void Domain_flow_graph_file::show_in_graph_window(Graph_window* graph_window)
     using namespace sw::dfa;
 
     graph_window->clear();
+    graph_window->set_domain_flow_graph(m_dfg);
 
     erhe::graph::Graph&            ui_graph    = graph_window->get_ui_graph();
     ax::NodeEditor::EditorContext* node_editor = graph_window->get_node_editor();
-
-    graph_window->set_domain_flow_graph(m_dfg);
 
     // each node that is in a column increments the row it which it is placed
     // we need to keep track of the nodes printed in each column

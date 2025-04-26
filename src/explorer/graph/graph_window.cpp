@@ -4,10 +4,12 @@
 
 #include "graph/graph_window.hpp"
 #include "graph/graph_node.hpp"
+#include "explorer_log.hpp"
 #include "windows/property_editor.hpp"
 
 #include "explorer_context.hpp"
 #include "explorer_message_bus.hpp"
+#include "tools/selection_tool.hpp"
 
 #include "erhe_graph/link.hpp"
 #include "erhe_graph/pin.hpp"
@@ -87,7 +89,7 @@ Graph_window::Graph_window(
 
     m_style_editor_window = std::make_unique<Node_style_editor_window>(imgui_renderer, imgui_windows);
 
-    clear();
+    clear_constructor_subset();
 }
 
 Graph_window::~Graph_window() noexcept
@@ -110,9 +112,14 @@ auto Graph_window::flags() -> ImGuiWindowFlags
 
 void Graph_window::clear()
 {
-    //ax::NodeEditor::Config config;
-    m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);
+    clear_constructor_subset();
+    m_context.selection->clear_selection();
+}
 
+void Graph_window::clear_constructor_subset()
+{
+    // NOTE: Using m_context from constructors is not allowed
+    m_dfg.reset();
     m_graph.clear();
     m_node_editor.reset();
     m_node_editor = std::make_unique<ax::NodeEditor::EditorContext>(nullptr);

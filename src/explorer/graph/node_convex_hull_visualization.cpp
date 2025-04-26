@@ -61,8 +61,13 @@ void Node_convex_hull_visualization::on_message(Explorer_message& message)
                 const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
                 reset_scene_for_node_convex_hull(node);
             }
+        } else {
+            m_visualized_node = nullptr;
+            if (m_root) {
+                m_root->recursive_remove();
+            }
+            m_geometry.reset();
         }
-
     }
 }
 

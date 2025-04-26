@@ -59,6 +59,7 @@ public:
     void fit  ();
 
 private:
+    void clear_constructor_subset();
     void on_message(Explorer_message& message);
 
     Explorer_context&                              m_context;
