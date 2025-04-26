@@ -14,6 +14,7 @@
 #include "erhe_commands/commands.hpp"
 #include "erhe_configuration/configuration.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
+#include "erhe_math/math_util.hpp"
 #include "erhe_profile/profile.hpp"
 #include "erhe_scene/camera.hpp"
 #include "erhe_scene/mesh.hpp"
@@ -241,7 +242,7 @@ auto Fly_camera_track_command::try_call() -> bool
 #pragma region Fly_camera_active_axis_float_command
 Fly_camera_active_axis_float_command::Fly_camera_active_axis_float_command(
     erhe::commands::Commands& commands,
-    Explorer_context&           context,
+    Explorer_context&         context,
     Variable                  variable,
     float                     scale
 )
@@ -306,25 +307,6 @@ Fly_camera_frame_command::Fly_camera_frame_command(erhe::commands::Commands& com
 
 auto Fly_camera_frame_command::try_call() -> bool
 {
-    Scene_view* scene_view = m_context.fly_camera_tool->get_hover_scene_view();
-    if (scene_view == nullptr) {
-        return false;
-    }
-    erhe::scene::Camera* camera = m_context.fly_camera_tool->get_camera();
-    if (camera == nullptr) {
-        return false;
-    }
-    erhe::scene::Node* camera_node = camera->get_node();
-    if (camera_node == nullptr) {
-        return false;
-    }
-
-    Viewport_scene_view* viewport_scene_view = scene_view->as_viewport_scene_view();
-    if (viewport_scene_view == nullptr) {
-        return false;
-    }
-    erhe::math::Viewport viewport = viewport_scene_view->projection_viewport();
-
     erhe::math::Bounding_box bbox{};
     const std::vector<std::shared_ptr<erhe::Item_base>>& selection = m_context.selection->get_selection();
     for (const std::shared_ptr<erhe::Item_base>& item : selection) {
@@ -350,22 +332,7 @@ auto Fly_camera_frame_command::try_call() -> bool
         return false;
     }
 
-    glm::vec3 camera_position = camera_node->position_in_world();
-    glm::vec3 target_position = bbox.center();
-    glm::vec3 direction = target_position - camera_position;
-    glm::vec3 direction_normalized = glm::normalize(target_position - camera_position);
-    float size = glm::length(bbox.diagonal());
-    erhe::scene::Projection::Fov_sides fov_sides = camera->projection()->get_fov_sides(viewport);
-    float min_fov_side = std::numeric_limits<float>::max();
-    for (float fov_side : { fov_sides.left, fov_sides.right, fov_sides.up, fov_sides.down }) {
-        min_fov_side = std::min(std::abs(fov_side), min_fov_side);
-    }
-    ////float tan_fov_side = std::tanf(min_fov_side);
-    float tan_fov_side = tanf(min_fov_side);
-    float fit_distance = size / (2.0f * tan_fov_side);
-    glm::vec3 new_position = target_position - fit_distance * direction_normalized;
-    glm::mat4 new_world_from_node = erhe::math::create_look_at(new_position, target_position, glm::vec3{0.0f, 1.0f, 0.0});
-    camera_node->set_world_from_node(new_world_from_node);
+    m_context.fly_camera_tool->frame(bbox);
     return true;
 }
 #pragma endregion Fly_camera_frame_command
@@ -373,7 +340,7 @@ auto Fly_camera_frame_command::try_call() -> bool
 #pragma region Fly_camera_move_command
 Fly_camera_move_command::Fly_camera_move_command(
     erhe::commands::Commands&            commands,
-    Explorer_context&                      context,
+    Explorer_context&                    context,
     const Variable                       variable,
     const erhe::math::Input_axis_control control,
     const bool                           active
@@ -559,6 +526,54 @@ void Fly_camera_tool::synthesize_input()
     );
 }
 
+auto Fly_camera_tool::frame(const erhe::math::Bounding_box& bbox) -> bool
+{
+    Scene_view* scene_view = get_last_hover_scene_view();
+    if (scene_view == nullptr) {
+        return false;
+    }
+    erhe::scene::Camera* camera = m_last_camera; // get_camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    erhe::scene::Node* camera_node = camera->get_node();
+    if (camera_node == nullptr) {
+        return false;
+    }
+
+    Viewport_scene_view* viewport_scene_view = scene_view->as_viewport_scene_view();
+    if (viewport_scene_view == nullptr) {
+        return false;
+    }
+    erhe::math::Viewport viewport = viewport_scene_view->projection_viewport();
+
+    glm::vec3 camera_position = camera_node->position_in_world();
+    glm::vec3 target_position = bbox.center();
+    glm::vec3 direction = target_position - camera_position;
+    glm::vec3 direction_normalized = glm::normalize(target_position - camera_position);
+    float size = glm::length(bbox.diagonal());
+    erhe::scene::Projection::Fov_sides fov_sides = camera->projection()->get_fov_sides(viewport);
+    float min_fov_side = std::numeric_limits<float>::max();
+    for (float fov_side : { fov_sides.left, fov_sides.right, fov_sides.up, fov_sides.down }) {
+        min_fov_side = std::min(std::abs(fov_side), min_fov_side);
+    }
+    ////float tan_fov_side = std::tanf(min_fov_side);
+    float tan_fov_side = tanf(min_fov_side);
+    float fit_distance = size / (2.0f * tan_fov_side);
+    glm::vec3 new_position = target_position - fit_distance * direction_normalized;
+    glm::mat4 new_world_from_node = erhe::math::create_look_at(new_position, target_position, glm::vec3{0.0f, 1.0f, 0.0});
+    camera_node->set_world_from_node(new_world_from_node);
+
+    //const glm::vec3 old_view_position                   = m_camera_controller->get_position();
+    //const glm::vec3 target_position                     = aabb.center();
+    //const glm::vec3 from_target_to_old_view_position    = old_view_position - target_position;
+    //const glm::vec3 target_to_view_direction_normalized = glm::normalize(from_target_to_old_view_position);
+    //const glm::vec3 new_view_position                   = target_position + frame_distance * target_to_view_direction_normalized;
+    //
+    //m_camera_controller->set_position(new_view_position);
+    return true;
+}
+
 void Fly_camera_tool::serialize_transform(bool store)
 {
     if (m_node == nullptr) {
@@ -600,8 +615,8 @@ Fly_camera_tool::Fly_camera_tool(
     erhe::commands::Commands&    commands,
     erhe::imgui::Imgui_renderer& imgui_renderer,
     erhe::imgui::Imgui_windows&  imgui_windows,
-    Explorer_context&              explorer_context,
-    Explorer_message_bus&          explorer_message_bus,
+    Explorer_context&            explorer_context,
+    Explorer_message_bus&        explorer_message_bus,
     Tools&                       tools
 )
     : erhe::imgui::Imgui_window       {imgui_renderer, imgui_windows, "Fly Camera", "fly_camera"}
@@ -789,7 +804,6 @@ void Fly_camera_tool::update_camera()
     const auto* camera_node = camera ? camera->get_node() : nullptr;
 
     // TODO This is messy
-
     if (m_camera_controller->get_node() != camera_node) {
         set_camera(camera.get());
     }
@@ -814,6 +828,9 @@ void Fly_camera_tool::set_camera(erhe::scene::Camera* const camera, erhe::scene:
 
     m_camera_controller->set_node(node);
     m_camera = camera;
+    if (camera != nullptr) {
+        m_last_camera = camera;
+    }
     m_node = node;
 }
 

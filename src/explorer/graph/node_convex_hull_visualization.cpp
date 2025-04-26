@@ -12,6 +12,7 @@
 #include "scene/scene_builder.hpp"
 #include "scene/scene_root.hpp"
 
+#include "tools/fly_camera_tool.hpp"
 #include "tools/selection_tool.hpp"
 
 #include "erhe_bit/bit_helpers.hpp"
@@ -113,9 +114,11 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     GEO::Mesh& convex_hull_geo_mesh = m_geometry->get_mesh();
     erhe::geometry::shapes::make_convex_hull(convex_hull_geo_mesh, convex_hull_points);
     log_graph->info("Convex hull output points for {}:", node.getName());
+    erhe::math::Bounding_box aabb{};
     for (GEO::index_t vertex : convex_hull_geo_mesh.vertices) {
         const GEO::vec3f p = get_pointf(convex_hull_geo_mesh.vertices, vertex);
         log_graph->info("  {}, {}, {}", p.x, p.y, p.z);
+        aabb.include(glm::vec3{p.x, p.y, p.z});
     }
     const uint64_t geometry_process_flags =
         erhe::geometry::Geometry::process_flag_connect |
@@ -157,6 +160,8 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         scene_graph_node->enable_flag_bits    (erhe::Item_flags::content | erhe::Item_flags::visible | erhe::Item_flags::show_in_ui);
     }
     m_root->set_parent(scene_root->get_scene().get_root_node());
+
+    m_context.fly_camera_tool->frame(aabb);
 
 }
 

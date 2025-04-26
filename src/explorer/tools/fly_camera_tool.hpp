@@ -8,6 +8,7 @@
 #include "erhe_imgui/imgui_window.hpp"
 #include "erhe_imgui/windows/graph.hpp"
 #include "erhe_imgui/windows/graph_plotter.hpp"
+#include "erhe_math/viewport.hpp"
 #include "erhe_profile/profile.hpp"
 #include "erhe_window/window_event_handler.hpp" // keycode
 
@@ -23,6 +24,9 @@ namespace erhe::commands {
 }
 namespace erhe::imgui {
     class Imgui_windows;
+}
+namespace erhe::math {
+    class Bounding_box;
 }
 namespace erhe::scene {
     class Camera;
@@ -113,7 +117,7 @@ class Fly_camera_move_command : public erhe::commands::Command
 public:
     Fly_camera_move_command(
         erhe::commands::Commands&      commands,
-        Explorer_context&                context,
+        Explorer_context&              context,
         Variable                       variable,
         erhe::math::Input_axis_control control,
         bool                           active
@@ -122,7 +126,7 @@ public:
     auto try_call_with_input(erhe::commands::Input_arguments& input) -> bool override;
 
 private:
-    Explorer_context&                m_context;
+    Explorer_context&              m_context;
     Variable                       m_variable;
     erhe::math::Input_axis_control m_control;
     bool                           m_active;
@@ -133,7 +137,7 @@ class Fly_camera_active_axis_float_command : public erhe::commands::Command
 public:
     Fly_camera_active_axis_float_command(
         erhe::commands::Commands& commands,
-        Explorer_context&           context,
+        Explorer_context&         context,
         Variable                  variable,
         float                     scale
     );
@@ -155,7 +159,7 @@ public:
 
 private:
     Explorer_context& m_context;
-    bool            m_store;
+    bool              m_store;
 };
 
 class Fly_camera_tool
@@ -208,6 +212,7 @@ public:
     auto try_start_track         () -> bool;
     auto track                   () -> bool;
     auto zoom                    (int64_t timestamp_ns, float delta) -> bool;
+    auto frame                   (const erhe::math::Bounding_box& bbox) -> bool;
     void serialize_transform     (bool store);
 
     void synthesize_input();
@@ -257,6 +262,7 @@ private:
     float                             m_sensitivity        {1.0f};
     bool                              m_use_viewport_camera{true};
     erhe::scene::Camera*              m_camera{nullptr};
+    erhe::scene::Camera*              m_last_camera{nullptr};
     erhe::scene::Node*                m_node{nullptr};
 
     class Event
