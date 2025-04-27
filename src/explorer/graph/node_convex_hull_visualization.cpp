@@ -85,20 +85,6 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         m_root->recursive_remove();
     }
 
-    // Extract points from node
-    std::vector<glm::vec3> convex_hull_points;
-    const sw::dfa::PointSet points = node.getConvexHull();
-    if (points.pointSet.size() < 4) {
-        log_graph->info("Not enough points for convex hull for {}:", node.getName());
-        return ;
-    }
-
-    log_graph->info("Convex hull input points for {}:", node.getName());
-    for (const sw::dfa::Point& p : points.pointSet) {
-        log_graph->info("  {}, {}, {}", p[0], p[1], p[2]);
-        convex_hull_points.emplace_back(p[0], p[1], p[2]);
-    }
-
     // Create material
     if (!m_material) {
         auto& material_library = scene_root->content_library()->materials;
@@ -110,22 +96,50 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     // Build convex hull mesh
     m_geometry.reset();
     m_geometry = std::make_shared<erhe::geometry::Geometry>("geometry_convex_hull");
-    GEO::Mesh& convex_hull_geo_mesh = m_geometry->get_mesh();
-    erhe::geometry::shapes::make_convex_hull(convex_hull_geo_mesh, convex_hull_points);
-    log_graph->info("Convex hull output points for {}:", node.getName());
-    erhe::math::Bounding_box aabb{};
-    for (GEO::index_t vertex : convex_hull_geo_mesh.vertices) {
-        const GEO::vec3f p = get_pointf(convex_hull_geo_mesh.vertices, vertex);
-        log_graph->info("  {}, {}, {}", p.x, p.y, p.z);
-        aabb.include(glm::vec3{p.x, p.y, p.z});
+    GEO::Mesh& geo_mesh = m_geometry->get_mesh();
+
+    const sw::dfa::ConvexHull<int>          convex_hull  = node.convexHull();
+    const std::vector<sw::dfa::Point<int>>& vertices     = convex_hull.vertices();
+    const std::vector<sw::dfa::Face>&       faces        = convex_hull.faces();
+    const std::size_t                       vertex_count = vertices.size();
+    const std::size_t                       face_count   = faces.size();
+    log_graph->info("Convex hull for {}: vertex count = {}, face count = {}", node.getName(), vertex_count, face_count);
+    if ((vertex_count < 3) || (face_count < 1)) {
+        log_graph->warn("Not enough vertices / faces for node convex hull mesh");
+        return;
     }
+    erhe::math::Bounding_box aabb{};
+    geo_mesh.vertices.create_vertices(static_cast<GEO::index_t>(vertex_count));
+    for (std::size_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
+        const sw::dfa::Point<int>& p = vertices[vertex_index];
+        const int x = p.coords[0];
+        const int y = p.coords[1];
+        const int z = p.coords[2];
+        geo_mesh.vertices.point(static_cast<GEO::index_t>(vertex_index)) = GEO::vec3{static_cast<double>(x), static_cast<double>(y), static_cast<double>(z)};
+        log_graph->info("  {}, {}, {}", x, y, z);
+        aabb.include(glm::vec3{x, y, z});
+    }
+    for (std::size_t face_index = 0; face_index < face_count; ++face_index) {
+        const sw::dfa::Face& face = faces[face_index];
+        const std::size_t corner_count = face.num_vertices();
+        std::stringstream ss;
+        ss << fmt::format("  Face {} with {} corners:", face_index, corner_count);
+        GEO::index_t facet = geo_mesh.facets.create_polygon(static_cast<GEO::index_t>(corner_count));
+        const std::vector<size_t>& corner_vertices = face.vertices();
+        for (std::size_t local_corner_index = 0; local_corner_index < corner_count; ++local_corner_index) {
+            const std::size_t vertex = corner_vertices[local_corner_index];
+            ss << fmt::format(" {}", vertex);
+            geo_mesh.facets.set_vertex(facet, static_cast<GEO::index_t>(local_corner_index), static_cast<GEO::index_t>(vertex));
+        }
+        log_graph->info("    {}", ss.str());
+    }
+
     const uint64_t geometry_process_flags =
         erhe::geometry::Geometry::process_flag_connect |
         erhe::geometry::Geometry::process_flag_build_edges |
         erhe::geometry::Geometry::process_flag_compute_facet_centroids |
         erhe::geometry::Geometry::process_flag_compute_smooth_vertex_normals |
-        erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates |
-        erhe::geometry::Geometry::process_flag_merge_coplanar_neighbors;
+        erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates;
     m_geometry->process(geometry_process_flags);
 
     // Build buffer mesh
@@ -141,7 +155,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     };
     erhe::primitive::Primitive primitive{m_geometry, m_material, build_info, erhe::primitive::Normal_style::polygon_normals};
 
-    ERHE_VERIFY(primitive.render_shape->make_raytrace(convex_hull_geo_mesh));
+    ERHE_VERIFY(primitive.render_shape->make_raytrace(geo_mesh));
     const glm::vec3 root_pos{0.0, 1.0f, 0.0f};
 
     m_root = std::make_shared<erhe::scene::Node>("root");
