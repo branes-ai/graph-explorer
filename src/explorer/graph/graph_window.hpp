@@ -33,6 +33,7 @@ class Explorer_message_bus;
 
 class Graph_node;
 class Node_style_editor_window;
+class Selection;
 
 class Graph_window : public erhe::imgui::Imgui_window
 {
@@ -50,6 +51,7 @@ public:
     void imgui() override;
     auto flags() -> ImGuiWindowFlags override;
 
+    [[nodiscard]] auto get_selection        () -> Selection&;
     [[nodiscard]] auto get_domain_flow_graph() const -> sw::dfa::DomainFlowGraph*;
     void set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg);
     auto get_ui_graph         () -> Graph&;
@@ -64,6 +66,7 @@ private:
 
     Explorer_context&                              m_context;
     Graph                                          m_graph;
+    std::unique_ptr<Selection>                     m_selection;
     std::unique_ptr<ax::NodeEditor::EditorContext> m_node_editor;
     std::unique_ptr<Node_style_editor_window>      m_style_editor_window;
     bool                                           m_pending_navigate_to_content{false};

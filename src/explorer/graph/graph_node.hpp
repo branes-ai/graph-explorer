@@ -6,6 +6,7 @@
 
 #include <vector>
 
+namespace erhe::scene { class Node; }
 namespace ax::NodeEditor { class EditorContext; }
 
 namespace explorer {
@@ -13,6 +14,7 @@ namespace explorer {
 class Explorer_context;
 class Sheet;
 class Graph;
+class Graph_window;
 
 class Node_edge
 {
@@ -34,9 +36,12 @@ public:
     void make_input_pin (std::size_t key, std::string_view name);
     void make_output_pin(std::size_t key, std::string_view name);
 
-    void node_editor(Explorer_context& context, ax::NodeEditor::EditorContext& node_editor);
+    void node_editor(Explorer_context& context, ax::NodeEditor::EditorContext& node_editor, Graph_window& graph_window);
 
     [[nodiscard]] auto get_payload() -> size_t;
+    [[nodiscard]] auto get_convex_hull_visualization() -> std::shared_ptr<erhe::scene::Node>;
+    void set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& visualization);
+
     virtual void imgui();
 
 protected:
@@ -63,9 +68,10 @@ protected:
 
     static constexpr std::size_t pin_key_todo = 1;
 
-    std::size_t m_payload;
-    int         m_input_pin_edge {Node_edge::left};
-    int         m_output_pin_edge{Node_edge::right};
+    std::size_t                        m_payload;
+    int                                m_input_pin_edge {Node_edge::left};
+    int                                m_output_pin_edge{Node_edge::right};
+    std::shared_ptr<erhe::scene::Node> m_convex_hull_visualization;
 };
 
 } // namespace explorer

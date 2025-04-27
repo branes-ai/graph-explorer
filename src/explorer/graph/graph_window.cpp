@@ -87,6 +87,7 @@ Graph_window::Graph_window(
         }
     );
 
+    m_selection           = std::make_unique<Selection               >(explorer_context, explorer_message_bus);
     m_style_editor_window = std::make_unique<Node_style_editor_window>(imgui_renderer, imgui_windows);
 
     clear_constructor_subset();
@@ -113,7 +114,7 @@ auto Graph_window::flags() -> ImGuiWindowFlags
 void Graph_window::clear()
 {
     clear_constructor_subset();
-    m_context.selection->clear_selection();
+    m_selection->clear_selection();
 }
 
 void Graph_window::clear_constructor_subset()
@@ -135,6 +136,11 @@ void Graph_window::clear_constructor_subset()
 void Graph_window::set_domain_flow_graph(const std::shared_ptr<sw::dfa::DomainFlowGraph>& dfg)
 {
     m_dfg = dfg;
+}
+
+auto Graph_window::get_selection() -> Selection&
+{
+    return *m_selection.get();
 }
 
 auto Graph_window::get_domain_flow_graph() const -> sw::dfa::DomainFlowGraph*
@@ -163,7 +169,7 @@ void Graph_window::imgui()
 
     for (erhe::graph::Node* node : m_graph.get_nodes()) {
         Graph_node* graph_node = dynamic_cast<Graph_node*>(node);
-        graph_node->node_editor(m_context, *m_node_editor.get());
+        graph_node->node_editor(m_context, *m_node_editor.get(), *this);
     }
 
     // Links
@@ -220,7 +226,7 @@ void Graph_window::imgui()
                 if (i != m_nodes.end()) {
                     const std::shared_ptr<Graph_node>& graph_node = *i;
                     if (graph_node->is_selected()) {
-                        m_context.selection->remove_from_selection(graph_node);
+                        m_selection->remove_from_selection(graph_node);
                     }
                     m_graph.unregister_node(i->get());
                     m_nodes.erase(i);

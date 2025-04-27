@@ -122,7 +122,7 @@ class Selection_tool : public Tool
 public:
     static constexpr int c_priority{3};
 
-    Selection_tool(Explorer_context& editor_context, Icon_set& icon_set, Tools& tools);
+    Selection_tool(erhe::commands::Commands& commands, Explorer_context& editor_context, Icon_set& icon_set, Tools& tools);
 
     // Implements Tool
     void handle_priority_update(int old_priority, int new_priority) override;
@@ -131,6 +131,18 @@ public:
     //void imgui() override;
 
     void viewport_toolbar(bool& hovered);
+
+#if defined(ERHE_XR_LIBRARY_OPENXR)
+    void setup_xr_bindings(erhe::commands::Commands& commands, Headset_view& headset_view);
+#endif
+
+private:
+    Viewport_select_command        m_viewport_select_command;
+    Viewport_select_toggle_command m_viewport_select_toggle_command;
+    Selection_delete_command       m_delete_command;
+    Selection_cut_command          m_cut_command;
+    Selection_copy_command         m_copy_command;
+    Selection_duplicate_command    m_duplicate_command;
 };
 
 class Scoped_selection_change
@@ -143,14 +155,10 @@ private:
     Selection& selection;
 };
 
-class Selection : public erhe::commands::Command_host
+class Selection
 {
 public:
-    Selection(erhe::commands::Commands& commands, Explorer_context& editor_context, Explorer_message_bus& editor_message_bus);
-
-#if defined(ERHE_XR_LIBRARY_OPENXR)
-    void setup_xr_bindings(erhe::commands::Commands& commands, Headset_view& headset_view);
-#endif
+    Selection(Explorer_context& editor_context, Explorer_message_bus& editor_message_bus);
 
     // Public API
     [[nodiscard]] auto get_selection    () const -> const std::vector<std::shared_ptr<erhe::Item_base>>&;
@@ -198,13 +206,6 @@ private:
     void toggle_mesh_selection(const std::shared_ptr<erhe::scene::Mesh>& mesh, bool was_selected, bool clear_others);
 
     Explorer_context&              m_context;
-
-    Viewport_select_command        m_viewport_select_command;
-    Viewport_select_toggle_command m_viewport_select_toggle_command;
-    Selection_delete_command       m_delete_command;
-    Selection_cut_command          m_cut_command;
-    Selection_copy_command         m_copy_command;
-    Selection_duplicate_command    m_duplicate_command;
 
     Scene_view*                                   m_hover_scene_view{nullptr};
     std::vector<std::shared_ptr<erhe::Item_base>> m_selection;

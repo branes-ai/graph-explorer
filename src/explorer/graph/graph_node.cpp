@@ -1,4 +1,5 @@
 #include "graph/graph_node.hpp"
+#include "graph/graph_window.hpp"
 #include "explorer_context.hpp"
 #include "explorer_log.hpp"
 #include "tools/selection_tool.hpp"
@@ -29,9 +30,19 @@ Graph_node::Graph_node(const std::string_view label, std::size_t payload)
 {
 }
 
-[[nodiscard]] auto Graph_node::get_payload() -> size_t
+auto Graph_node::get_payload() -> size_t
 {
     return m_payload;
+}
+
+auto Graph_node::get_convex_hull_visualization() -> std::shared_ptr<erhe::scene::Node>
+{
+    return m_convex_hull_visualization;
+}
+
+void Graph_node::set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& visualization)
+{
+    m_convex_hull_visualization = visualization;
 }
 
 void Graph_node::make_input_pin(std::size_t key, std::string_view name)
@@ -48,7 +59,7 @@ void Graph_node::imgui()
 {
 }
 
-void Graph_node::node_editor(Explorer_context& explorer_context, ax::NodeEditor::EditorContext& node_editor)
+void Graph_node::node_editor(Explorer_context& explorer_context, ax::NodeEditor::EditorContext& node_editor, Graph_window& graph_window)
 {
     ImGui::PushID(static_cast<int>(get_id()));
     ERHE_DEFER( ImGui::PopID(); );
@@ -145,9 +156,9 @@ void Graph_node::node_editor(Explorer_context& explorer_context, ax::NodeEditor:
     const bool editor_selection = node_editor.IsNodeSelected(get_id());
     if (item_selection != editor_selection) {
         if (editor_selection) {
-            explorer_context.selection->add_to_selection(shared_from_this());
+            graph_window.get_selection().add_to_selection(shared_from_this());
         } else {
-            explorer_context.selection->remove_from_selection(shared_from_this());
+            graph_window.get_selection().remove_from_selection(shared_from_this());
         }
     }
 }

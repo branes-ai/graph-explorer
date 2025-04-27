@@ -245,33 +245,30 @@ auto Selection_duplicate_command::try_call() -> bool
 
 #pragma endregion Commands
 
-Selection_tool::Selection_tool(Explorer_context& explorer_context, Icon_set& icon_set, Tools& tools)
-    : Tool{explorer_context}
-{
-    ERHE_PROFILE_FUNCTION();
-
-    set_base_priority(c_priority);
-    set_description  ("Selection Tool");
-    set_flags        (Tool_flags::toolbox | Tool_flags::secondary);
-    set_icon         (icon_set.icons.select);
-    tools.register_tool(this);
-}
-
-Selection::Selection(erhe::commands::Commands& commands, Explorer_context& explorer_context, Explorer_message_bus& explorer_message_bus)
-    : m_context                       {explorer_context}
+Selection_tool::Selection_tool(erhe::commands::Commands& commands, Explorer_context& explorer_context, Icon_set& icon_set, Tools& tools)
+    : Tool                            {explorer_context}
     , m_viewport_select_command       {commands, explorer_context}
     , m_viewport_select_toggle_command{commands, explorer_context}
     , m_delete_command                {commands, explorer_context}
     , m_cut_command                   {commands, explorer_context}
     , m_copy_command                  {commands, explorer_context}
     , m_duplicate_command             {commands, explorer_context}
-    , m_range_selection               {*this}
+
 {
+    ERHE_PROFILE_FUNCTION();
+
     commands.register_command            (&m_viewport_select_command);
     commands.register_command            (&m_delete_command);
     commands.register_command            (&m_cut_command);
     commands.register_command            (&m_copy_command);
     commands.register_command            (&m_duplicate_command);
+
+    m_viewport_select_command.set_host(this);
+    m_delete_command         .set_host(this);
+    m_cut_command            .set_host(this);
+    m_copy_command           .set_host(this);
+    m_duplicate_command      .set_host(this);
+
     commands.bind_command_to_mouse_button(&m_viewport_select_command, erhe::window::Mouse_button_left, false);
     commands.bind_command_to_key         (&m_delete_command,          erhe::window::Key_delete,        true);
     commands.bind_command_to_key         (&m_cut_command,             erhe::window::Key_x,             true, erhe::window::Key_modifier_bit_ctrl);
@@ -285,6 +282,18 @@ Selection::Selection(erhe::commands::Commands& commands, Explorer_context& explo
     commands.bind_command_to_menu(&m_duplicate_command, "Edit.Duplicate");
     commands.bind_command_to_menu(&m_duplicate_command, "Edit.Paster");
 
+    set_base_priority(c_priority);
+    set_description  ("Selection Tool");
+    //set_flags        (Tool_flags::toolbox | Tool_flags::secondary);
+    set_icon         (icon_set.icons.select);
+    set_enabled      (true); // not in toolbox in explorer
+    tools.register_tool(this);
+}
+
+Selection::Selection(Explorer_context& explorer_context, Explorer_message_bus& explorer_message_bus)
+    : m_context                       {explorer_context}
+    , m_range_selection               {*this}
+{
     explorer_message_bus.add_receiver(
         [&](Explorer_message& message) {
             using namespace erhe::bit;
@@ -293,13 +302,10 @@ Selection::Selection(erhe::commands::Commands& commands, Explorer_context& explo
             }
         }
     );
-
-    m_viewport_select_command.set_host(this);
-    m_delete_command.set_host(this);
 }
 
 #if defined(ERHE_XR_LIBRARY_OPENXR)
-void Selection::setup_xr_bindings(erhe::commands::Commands& commands, Headset_view& headset_view)
+void Selection_tool::setup_xr_bindings(erhe::commands::Commands& commands, Headset_view& headset_view)
 {
     erhe::xr::Headset* headset = headset_view.get_headset();
     if (headset == nullptr) {

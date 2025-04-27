@@ -51,41 +51,80 @@ Node_convex_hull_visualization::Node_convex_hull_visualization(
 void Node_convex_hull_visualization::on_message(Explorer_message& message)
 {
     using namespace erhe::bit;
+    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
     if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_selection)) {
-
-        const auto selected_graph_node = m_context.selection->get<erhe::graph::Node>();
-        sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
-
-        if (selected_graph_node && (dfg != nullptr)) {
-            Graph_node* graph_node = dynamic_cast<Graph_node*>(selected_graph_node.get());
-            if (graph_node != nullptr) {
-                std::size_t node_id = graph_node->get_payload();
-                const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
-                reset_scene_for_node_convex_hull(node);
+        bool new_nodes = false;
+        for (const auto& item : message.no_longer_selected) {
+            std::shared_ptr<Graph_node> graph_ui_node = std::dynamic_pointer_cast<Graph_node>(item);
+            if (!graph_ui_node) {
+                continue;
             }
-        } else {
-            m_visualized_node = nullptr;
-            if (m_root) {
-                m_root->recursive_remove();
+            std::shared_ptr<erhe::scene::Node> scene_graph_node = graph_ui_node->get_convex_hull_visualization();
+            if (scene_graph_node) {
+                scene_graph_node->recursive_remove();
+                graph_ui_node->set_convex_hull_visualization({});
             }
-            m_geometry.reset();
+        }
+        for (const auto& item : message.newly_selected) {
+            std::shared_ptr<Graph_node> graph_ui_node = std::dynamic_pointer_cast<Graph_node>(item);
+            if (!graph_ui_node) {
+                continue;
+            }
+            std::size_t node_id = graph_ui_node->get_payload();
+            const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
+            std::shared_ptr<erhe::scene::Node> scene_graph_node = add_node_convex_hull(node);
+            if (scene_graph_node) {
+                graph_ui_node->set_convex_hull_visualization(scene_graph_node);
+                new_nodes = true;
+            }
+        }
+        if (new_nodes && m_last_scene_bbox.is_valid()) {
+            std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
+            m_context.fly_camera_tool->frame(m_last_scene_bbox, Frame_mode::look_at_with_standard_y_up);
+            // TODO Test Frame_mode::keep_orientation and/or Frame_mode::choose_direction_based_on_bbox
         }
     }
 }
 
-void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::dfa::DomainFlowNode& node)
+void Node_convex_hull_visualization::update_bounding_box()
 {
-    if (m_visualized_node == &node) {
-        return;
-    }
-    m_visualized_node = &node;
+    m_last_scene_bbox = erhe::math::Bounding_box{};
+    m_root->for_each_child_const<erhe::scene::Node>(
+        [this](const erhe::scene::Node& node) -> bool
+        {
+            std::shared_ptr<erhe::scene::Mesh> mesh = get_mesh(&node);
+            if (!mesh) {
+                return true;
+            }
+            const std::vector<erhe::primitive::Primitive>& primitives = mesh->get_primitives();
+            for (const erhe::primitive::Primitive& primitive : primitives) {
+                if (!primitive.render_shape) {
+                    continue;
+                }
+                const erhe::primitive::Buffer_mesh& buffer_mesh = primitive.render_shape->get_renderable_mesh();
+                const erhe::math::Bounding_box bbox_in_world = buffer_mesh.bounding_box.transformed_by(node.world_from_node());
+                m_last_scene_bbox.include(bbox_in_world);
+            }
+            return true;
+        }
+    );
+}
 
+auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainFlowNode& node) -> std::shared_ptr<erhe::scene::Node>
+{
+    std::shared_ptr<erhe::scene::Node> scene_graph_node{};
     std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
     std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> scene_lock{scene_root->item_host_mutex};
 
-    if (m_root) {
-        m_root->recursive_remove();
+    if (!m_root) {
+        const glm::vec3 root_pos{0.0, 1.0f, 0.0f};
+        m_root = std::make_shared<erhe::scene::Node>("root");
+        m_root->enable_flag_bits(erhe::Item_flags::content | erhe::Item_flags::visible | erhe::Item_flags::show_in_ui);
+        m_root->set_world_from_node(erhe::math::create_translation<float>(root_pos));
+        m_root->set_parent(scene_root->get_scene().get_root_node());
     }
+
+    update_bounding_box();
 
     // Create material
     if (!m_material) {
@@ -96,9 +135,8 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     }
 
     // Build convex hull mesh
-    m_geometry.reset();
-    m_geometry = std::make_shared<erhe::geometry::Geometry>("geometry_convex_hull");
-    GEO::Mesh& geo_mesh = m_geometry->get_mesh();
+    std::shared_ptr<erhe::geometry::Geometry> geometry = std::make_shared<erhe::geometry::Geometry>("geometry_convex_hull");
+    GEO::Mesh& geo_mesh = geometry->get_mesh();
 
 #if 0 // New API - faces are not all consistently oriented (either all in clockwise or counter-clockwise order)
     const sw::dfa::ConvexHull<int>          convex_hull  = node.convexHull();
@@ -153,7 +191,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     const sw::dfa::PointSet points = node.convexHullPointSet();
     if (points.pointSet.size() < 4) {
         log_graph->info("Not enough points for convex hull for {}:", node.getName());
-        return ;
+        return {};
     }
 
     log_graph->info("Convex hull input points for {}:", node.getName());
@@ -169,7 +207,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         erhe::geometry::Geometry::process_flag_compute_smooth_vertex_normals |
         erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates |
         erhe::geometry::Geometry::process_flag_merge_coplanar_neighbors;
-    m_geometry->process(geometry_process_flags);
+    geometry->process(geometry_process_flags);
     log_graph->info("Convex hull output points for {}:", node.getName());
     erhe::math::Bounding_box aabb{};
     for (GEO::index_t vertex : geo_mesh.vertices) {
@@ -190,32 +228,28 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         },
         .buffer_info = mesh_memory.buffer_info
     };
-    erhe::primitive::Primitive primitive{m_geometry, m_material, build_info, erhe::primitive::Normal_style::polygon_normals};
+    erhe::primitive::Primitive primitive{geometry, m_material, build_info, erhe::primitive::Normal_style::polygon_normals};
+
+    using namespace erhe;
+    const uint64_t node_flags = Item_flags::visible | Item_flags::content | Item_flags::show_in_ui;
+    const uint64_t mesh_flags = Item_flags::visible | Item_flags::content | Item_flags::opaque | Item_flags::id | Item_flags::show_in_ui;
+
+    float x = m_last_scene_bbox.is_valid()
+        ? m_last_scene_bbox.max.x + m_gap + aabb.center().x
+        : -aabb.center().x;
 
     ERHE_VERIFY(primitive.render_shape->make_raytrace(geo_mesh));
-    const glm::vec3 root_pos{0.0, 1.0f, 0.0f};
+    scene_graph_node = std::make_shared<erhe::scene::Node>("node_convex_hull");
+    auto scene_mesh = std::make_shared<erhe::scene::Mesh>("", primitive);
+    scene_mesh->layer_id = scene_root->layers().content()->id;
+    scene_mesh->enable_flag_bits(mesh_flags);
+    scene_graph_node->attach              (scene_mesh);
+    scene_graph_node->set_parent          (m_root);
+    scene_graph_node->set_parent_from_node(erhe::math::create_translation<float>(x, 0.0f, 0.0f));
+    scene_graph_node->enable_flag_bits    (node_flags);
 
-    m_root = std::make_shared<erhe::scene::Node>("root");
-
-    m_root->enable_flag_bits(erhe::Item_flags::content | erhe::Item_flags::visible | erhe::Item_flags::show_in_ui);
-    m_root->set_world_from_node(erhe::math::create_translation<float>(root_pos));
-    {
-        auto scene_graph_node = std::make_shared<erhe::scene::Node>("node_convex_hull");
-        auto scene_mesh = std::make_shared<erhe::scene::Mesh>("", primitive);
-        scene_mesh->layer_id = scene_root->layers().content()->id;
-        scene_mesh->enable_flag_bits(erhe::Item_flags::content | erhe::Item_flags::shadow_cast | erhe::Item_flags::opaque);
-        scene_graph_node->attach              (scene_mesh);
-        scene_graph_node->set_parent          (m_root);
-        scene_graph_node->set_parent_from_node(erhe::math::create_translation<float>(0.0f, 0.0f, 0.0f));
-        scene_graph_node->enable_flag_bits    (erhe::Item_flags::content | erhe::Item_flags::visible | erhe::Item_flags::show_in_ui);
-    }
-    m_root->set_parent(scene_root->get_scene().get_root_node());
-
-    m_context.fly_camera_tool->frame(aabb, Frame_mode::look_at_with_standard_y_up);
-
-    // TODO Test
-    //m_context.fly_camera_tool->frame(aabb, Frame_mode::keep_orientation);
-    //m_context.fly_camera_tool->frame(aabb, Frame_mode::choose_direction_based_on_bbox);
+    update_bounding_box();
+    return scene_graph_node;
 }
 
 void Node_convex_hull_visualization::imgui()

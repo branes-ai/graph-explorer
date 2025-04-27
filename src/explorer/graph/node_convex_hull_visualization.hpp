@@ -2,20 +2,19 @@
 
 #include "erhe_imgui/imgui_window.hpp"
 
+#include "erhe_math/math_util.hpp"
+
+#include <vector>
+
 namespace sw::dfa { 
     struct DomainFlowGraph;
     struct DomainFlowNode;
 }
 
-namespace erhe::geometry {
-    class Geometry;
-}
-namespace erhe::primitive {
-    class Material;
-}
-namespace erhe::scene {
-    class Node;
-}
+namespace erhe::geometry  { class Geometry; }
+namespace erhe::graph     { class Node; }
+namespace erhe::primitive { class Material; }
+namespace erhe::scene     { class Node; }
 
 namespace explorer {
 
@@ -40,13 +39,16 @@ public:
 private:
     void on_message(Explorer_message& message);
 
-    void reset_scene_for_node_convex_hull(const sw::dfa::DomainFlowNode& node);
+    void update_bounding_box();
 
-    Explorer_context&                          m_context;
-    const sw::dfa::DomainFlowNode*             m_visualized_node{nullptr};
-    std::shared_ptr<erhe::primitive::Material> m_material;
-    std::shared_ptr<erhe::geometry::Geometry>  m_geometry;
-    std::shared_ptr<erhe::scene::Node>         m_root;
+    [[nodiscard]] auto add_node_convex_hull(const sw::dfa::DomainFlowNode& node) -> std::shared_ptr<erhe::scene::Node>;
+
+    Explorer_context&                               m_context;
+    std::vector<std::shared_ptr<erhe::graph::Node>> m_visualized_nodes;
+    std::shared_ptr<erhe::primitive::Material>      m_material;
+    std::shared_ptr<erhe::scene::Node>              m_root;
+    float                                           m_gap{4.0f};
+    erhe::math::Bounding_box                        m_last_scene_bbox{};
 };
 
 } // namespace explorer

@@ -374,13 +374,13 @@ public:
             std::shared_ptr<Tracy_observer> observer = m_executor->make_observer<Tracy_observer>();
 #endif
 
-            m_commands           = std::make_unique<erhe::commands::Commands      >();
-            m_scene_message_bus  = std::make_unique<erhe::scene::Scene_message_bus>();
-            m_explorer_message_bus = std::make_unique<Explorer_message_bus            >();
-            m_explorer_settings    = std::make_unique<Explorer_settings               >();
-            m_input_state        = std::make_unique<Input_state                   >();
-            m_time               = std::make_unique<Time                          >();
-            auto& commands           = *m_commands          .get();
+            m_commands             = std::make_unique<erhe::commands::Commands      >();
+            m_scene_message_bus    = std::make_unique<erhe::scene::Scene_message_bus>();
+            m_explorer_message_bus = std::make_unique<Explorer_message_bus          >();
+            m_explorer_settings    = std::make_unique<Explorer_settings             >();
+            m_input_state          = std::make_unique<Input_state                   >();
+            m_time                 = std::make_unique<Time                          >();
+            auto& commands             = *m_commands            .get();
             auto& explorer_message_bus = *m_explorer_message_bus.get();
 
             // Icon rasterization is slow task that can be run in parallel with
@@ -468,7 +468,7 @@ public:
             m_explorer_scenes      = std::make_unique<Explorer_scenes >(m_explorer_context);
             m_explorer_windows     = std::make_unique<Explorer_windows>(m_explorer_context, commands);
             m_viewport_scene_views = std::make_unique<Scene_views     >(commands, m_explorer_context, explorer_message_bus);
-            m_selection            = std::make_unique<Selection       >(commands, m_explorer_context, explorer_message_bus);
+            m_selection            = std::make_unique<Selection       >(m_explorer_context, explorer_message_bus);
             m_scene_commands       = std::make_unique<Scene_commands  >(commands, m_explorer_context);
             m_debug_draw           = std::make_unique<Debug_draw      >(m_explorer_context);
             m_program_interface    = std::make_unique<erhe::scene_renderer::Program_interface>(*m_graphics_instance.get(), m_vertex_format);
@@ -829,7 +829,7 @@ public:
             })  .name("Brush_tool")
                 .succeed(headset_task, icon_set_task, tools_task);
 
-            auto group_2 = taskflow.emplace([this]()
+            auto group_2 = taskflow.emplace([this, &commands]()
             {
                 erhe::graphics::Scoped_gl_context ctx{m_graphics_instance->context_provider};
                 m_create = std::make_unique<Create>(
@@ -871,6 +871,7 @@ public:
                     *m_tools.get()
                 );
                 m_selection_tool = std::make_unique<Selection_tool>(
+                    commands,
                     m_explorer_context,
                     *m_icon_set.get(),
                     *m_tools.get()
@@ -929,6 +930,7 @@ public:
         }
 
         m_hotbar->get_all_tools();
+        m_selection_tool->set_enabled(true);
 
         gl::clip_control(gl::Clip_control_origin::lower_left, gl::Clip_control_depth::zero_to_one);
         gl::enable      (gl::Enable_cap::framebuffer_srgb);
