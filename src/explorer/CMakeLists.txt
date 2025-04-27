@@ -74,6 +74,10 @@ erhe_target_sources_grouped(
     renderable.hpp
     renderers/composer.cpp
     renderers/composer.hpp
+    renderers/cube_instance_buffer.cpp
+    renderers/cube_instance_buffer.hpp
+    renderers/cube_renderer.cpp
+    renderers/cube_renderer.hpp
     renderers/frustum_tiler.cpp
     renderers/frustum_tiler.hpp
     renderers/id_renderer.cpp
@@ -145,6 +149,10 @@ erhe_target_sources_grouped(
     res/shaders/post_processing.vert
     res/shaders/sky.frag
     res/shaders/sky.vert
+    res/shaders/grid.frag
+    res/shaders/grid.vert
+    res/shaders/cubes.frag
+    res/shaders/cubes.vert
     res/shaders/standard.frag
     res/shaders/standard.vert
     res/shaders/standard_debug.frag

@@ -260,6 +260,7 @@ auto Domain_flow_graph_file::load() -> bool
         m_dfg->load(file_name);
         // distribute the constants throughout the pipeline
 		m_dfg->graph.distributeConstants();
+        m_dfg->instantiateDomains();
         return true;
     } catch (...) {
         log_graph->warn("Domain_flow_graph_file::load() - exception");

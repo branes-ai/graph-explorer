@@ -28,6 +28,8 @@
 
 #include <dfa/dfa.hpp>
 
+#include <geogram/mesh/mesh_repair.h>
+
 namespace explorer {
 
 Node_convex_hull_visualization::Node_convex_hull_visualization(
@@ -98,6 +100,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
     m_geometry = std::make_shared<erhe::geometry::Geometry>("geometry_convex_hull");
     GEO::Mesh& geo_mesh = m_geometry->get_mesh();
 
+#if 0 // New API - faces are not all consistently oriented (either all in clockwise or counter-clockwise order)
     const sw::dfa::ConvexHull<int>          convex_hull  = node.convexHull();
     const std::vector<sw::dfa::Point<int>>& vertices     = convex_hull.vertices();
     const std::vector<sw::dfa::Face>&       faces        = convex_hull.faces();
@@ -109,6 +112,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         return;
     }
     erhe::math::Bounding_box aabb{};
+    geo_mesh.vertices.set_double_precision();
     geo_mesh.vertices.create_vertices(static_cast<GEO::index_t>(vertex_count));
     for (std::size_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
         const sw::dfa::Point<int>& p = vertices[vertex_index];
@@ -119,6 +123,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         log_graph->info("  {}, {}, {}", x, y, z);
         aabb.include(glm::vec3{x, y, z});
     }
+    geo_mesh.vertices.set_single_precision();
     for (std::size_t face_index = 0; face_index < face_count; ++face_index) {
         const sw::dfa::Face& face = faces[face_index];
         const std::size_t corner_count = face.num_vertices();
@@ -133,6 +138,7 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         }
         log_graph->info("    {}", ss.str());
     }
+    GEO::mesh_reorient(geo_mesh);
 
     const uint64_t geometry_process_flags =
         erhe::geometry::Geometry::process_flag_connect |
@@ -141,6 +147,37 @@ void Node_convex_hull_visualization::reset_scene_for_node_convex_hull(const sw::
         erhe::geometry::Geometry::process_flag_compute_smooth_vertex_normals |
         erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates;
     m_geometry->process(geometry_process_flags);
+#else // Old API - this path gets faces correctly oriented but the new API that has explicit faces will be nicer
+    // Extract points from node
+    std::vector<glm::vec3> convex_hull_points;
+    const sw::dfa::PointSet points = node.convexHullPointSet();
+    if (points.pointSet.size() < 4) {
+        log_graph->info("Not enough points for convex hull for {}:", node.getName());
+        return ;
+    }
+
+    log_graph->info("Convex hull input points for {}:", node.getName());
+        for (const sw::dfa::Point<int>& p : points.pointSet) {
+        log_graph->info("  {}, {}, {}", p.coords[0], p.coords[1], p.coords[2]);
+        convex_hull_points.emplace_back(p.coords[0], p.coords[1], p.coords[2]);
+    }
+    erhe::geometry::shapes::make_convex_hull(geo_mesh, convex_hull_points);
+    const uint64_t geometry_process_flags =
+        erhe::geometry::Geometry::process_flag_connect |
+        erhe::geometry::Geometry::process_flag_build_edges |
+        erhe::geometry::Geometry::process_flag_compute_facet_centroids |
+        erhe::geometry::Geometry::process_flag_compute_smooth_vertex_normals |
+        erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates |
+        erhe::geometry::Geometry::process_flag_merge_coplanar_neighbors;
+    m_geometry->process(geometry_process_flags);
+    log_graph->info("Convex hull output points for {}:", node.getName());
+    erhe::math::Bounding_box aabb{};
+    for (GEO::index_t vertex : geo_mesh.vertices) {
+        const GEO::vec3f p = get_pointf(geo_mesh.vertices, vertex);
+        log_graph->info("  {}, {}, {}", p.x, p.y, p.z);
+        aabb.include(glm::vec3{p.x, p.y, p.z});
+    }
+#endif
 
     // Build buffer mesh
     Mesh_memory& mesh_memory = *m_context.mesh_memory;
