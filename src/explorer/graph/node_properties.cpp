@@ -153,8 +153,8 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
         if (output_count > 0) {
             m_property_editor.push_group("Outputs", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
             for (std::size_t i = 0; i < output_count; ++i) {
-                std::string label = fmt::format("[{}]", i);
-                m_property_editor.add_entry(label, [&node, i]() { ImGui::TextUnformatted(node.resultType.at(i).c_str());});
+                std::string label = fmt::format("[{}] : {}", i, node.getResultType(i));
+                m_property_editor.add_entry(label, [&node, i]() { ImGui::TextUnformatted(node.getResultValue(i).c_str());});
             }
             m_property_editor.pop_group();
         }
