@@ -136,9 +136,9 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
 
     // Build convex hull mesh
     std::shared_ptr<erhe::geometry::Geometry> geometry = std::make_shared<erhe::geometry::Geometry>("geometry_convex_hull");
+
     GEO::Mesh& geo_mesh = geometry->get_mesh();
 
-#if 0 // New API - faces are not all consistently oriented (either all in clockwise or counter-clockwise order)
     const sw::dfa::ConvexHull<int>          convex_hull  = node.convexHull();
     const std::vector<sw::dfa::Point<int>>& vertices     = convex_hull.vertices();
     const std::vector<sw::dfa::Face>&       faces        = convex_hull.faces();
@@ -147,16 +147,29 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
     log_graph->info("Convex hull for {}: vertex count = {}, face count = {}", node.getName(), vertex_count, face_count);
     if ((vertex_count < 3) || (face_count < 1)) {
         log_graph->warn("Not enough vertices / faces for node convex hull mesh");
-        return;
+        return {};
     }
-    erhe::math::Bounding_box aabb{};
     geo_mesh.vertices.set_double_precision();
     geo_mesh.vertices.create_vertices(static_cast<GEO::index_t>(vertex_count));
+
+    // First pass to comput aabb
+    erhe::math::Bounding_box input_aabb{};
     for (std::size_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
         const sw::dfa::Point<int>& p = vertices[vertex_index];
         const int x = p.coords[0];
         const int y = p.coords[1];
         const int z = p.coords[2];
+        //log_graph->info("  {}, {}, {}", x, y, z);
+        input_aabb.include(glm::vec3{x, y, z});
+    }
+
+    // Second pass - translate vertices so that (0, 0, 0) is center
+    erhe::math::Bounding_box aabb{};
+    for (std::size_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
+        const sw::dfa::Point<int>& p = vertices[vertex_index];
+        const double x = static_cast<double>(p.coords[0]) - input_aabb.center().x;
+        const double y = static_cast<double>(p.coords[1]) - input_aabb.center().y;
+        const double z = static_cast<double>(p.coords[2]) - input_aabb.center().z;
         geo_mesh.vertices.point(static_cast<GEO::index_t>(vertex_index)) = GEO::vec3{static_cast<double>(x), static_cast<double>(y), static_cast<double>(z)};
         log_graph->info("  {}, {}, {}", x, y, z);
         aabb.include(glm::vec3{x, y, z});
@@ -176,7 +189,6 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
         }
         log_graph->info("    {}", ss.str());
     }
-    GEO::mesh_reorient(geo_mesh);
 
     const uint64_t geometry_process_flags =
         erhe::geometry::Geometry::process_flag_connect |
@@ -184,8 +196,20 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
         erhe::geometry::Geometry::process_flag_compute_facet_centroids |
         erhe::geometry::Geometry::process_flag_compute_smooth_vertex_normals |
         erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates;
-    m_geometry->process(geometry_process_flags);
-#else // Old API - this path gets faces correctly oriented but the new API that has explicit faces will be nicer
+
+    for (GEO::index_t facet : geo_mesh.facets) {
+        const GEO::vec3f facet_normal = GEO::normalize(mesh_facet_normalf(geo_mesh, facet));
+        const GEO::vec3f centroid = GEO::normalize(mesh_facet_centerf(geo_mesh, facet));
+        const float dot_product = GEO::dot(facet_normal, centroid);
+        if (dot_product < 0.0f) {
+            geo_mesh.facets.flip(facet);
+        }
+    }
+    GEO::mesh_reorient(geo_mesh, nullptr);
+    geometry->process(geometry_process_flags);
+
+#if 0
+//#else // Old API - this path gets faces correctly oriented but the new API that has explicit faces will be nicer
     // Extract points from node
     std::vector<glm::vec3> convex_hull_points;
     const sw::dfa::PointSet points = node.convexHullPointSet();
@@ -234,8 +258,9 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
     const uint64_t node_flags = Item_flags::visible | Item_flags::content | Item_flags::show_in_ui;
     const uint64_t mesh_flags = Item_flags::visible | Item_flags::content | Item_flags::opaque | Item_flags::id | Item_flags::show_in_ui;
 
+    const glm::vec3 half_size = 0.5f * aabb.diagonal();
     float x = m_last_scene_bbox.is_valid()
-        ? m_last_scene_bbox.max.x + m_gap + aabb.center().x
+        ? m_last_scene_bbox.max.x + m_gap + half_size.x
         : -aabb.center().x;
 
     ERHE_VERIFY(primitive.render_shape->make_raytrace(geo_mesh));
