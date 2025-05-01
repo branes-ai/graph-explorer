@@ -5,8 +5,10 @@
 
 #include "explorer_context.hpp"
 #include "explorer_message_bus.hpp"
+#include "explorer_rendering.hpp"
 
 #include "renderers/mesh_memory.hpp"
+#include "renderers/render_context.hpp"
 
 #include "scene/content_library.hpp"
 #include "scene/scene_builder.hpp"
@@ -14,6 +16,7 @@
 
 #include "tools/fly_camera_tool.hpp"
 #include "tools/selection_tool.hpp"
+#include "tools/transform/transform_tool.hpp"
 
 #include "erhe_bit/bit_helpers.hpp"
 #include "erhe_geometry/shapes/convex_hull.hpp"
@@ -23,6 +26,9 @@
 #include "erhe_primitive/primitive_builder.hpp"
 #include "erhe_primitive/buffer_mesh.hpp"
 #include "erhe_profile/profile.hpp"
+#include "erhe_renderer/line_renderer.hpp"
+#include "erhe_renderer/scoped_line_renderer.hpp"
+#include "erhe_renderer/text_renderer.hpp"
 #include "erhe_scene/node.hpp"
 #include "erhe_scene/mesh.hpp"
 
@@ -36,11 +42,14 @@ Node_convex_hull_visualization::Node_convex_hull_visualization(
     erhe::imgui::Imgui_renderer& imgui_renderer,
     erhe::imgui::Imgui_windows&  imgui_windows,
     Explorer_context&            explorer_context,
-    Explorer_message_bus&        explorer_message_bus
+    Explorer_message_bus&        explorer_message_bus,
+    Explorer_rendering&          explorer_rendering
 )
     : Imgui_window{imgui_renderer, imgui_windows, "Node Convex Hull Visualization", "node_convex_hull_visualization"}
     , m_context   {explorer_context}
 {
+    explorer_rendering.add(this);
+
     explorer_message_bus.add_receiver(
         [&](Explorer_message& message) {
             on_message(message);
@@ -275,6 +284,103 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
 
     update_bounding_box();
     return scene_graph_node;
+}
+
+void Node_convex_hull_visualization::render(const Render_context& context)
+{
+    ERHE_PROFILE_FUNCTION();
+
+    if (context.viewport_scene_view == nullptr) {
+        return;
+    }
+
+    if (m_context.transform_tool->is_transform_tool_active()) {
+        return;
+    }
+
+    std::shared_ptr<erhe::scene::Camera> selected_camera;
+    const auto& selection = m_context.selection->get_selection();
+    for (const auto& item : selection) {
+        if (erhe::scene::is_camera(item)) {
+            selected_camera = std::dynamic_pointer_cast<erhe::scene::Camera>(item);
+        }
+    }
+
+    const auto scene_root = context.scene_view.get_scene_root();
+    if (!scene_root) {
+        return;
+    }
+
+    erhe::renderer::Scoped_line_renderer line_renderer = context.get_line_renderer(2, true, true);
+
+    //for (const auto& node : scene_root->get_hosted_scene()->get_flat_nodes()) {
+    //    if (node && should_visualize(m_node_axis_visualization, node)) {
+    const glm::vec4 red  {1.0f, 0.0f, 0.0f, 1.0f};
+    const glm::vec4 green{0.0f, 1.0f, 0.0f, 1.0f};
+    const glm::vec4 blue {0.0f, 0.0f, 1.0f, 1.0f};
+    const glm::vec3 O     { 0.0f };
+    const glm::vec3 axis_x{1000.0f, 0.0f, 0.0f};
+    const glm::vec3 axis_y{0.0f, 1000.0f, 0.0f};
+    const glm::vec3 axis_z{0.0f, 0.0f, 1000.0f};
+
+    //const mat4 m{node->world_from_node()};
+    line_renderer.set_thickness(30.0f);
+    line_renderer.add_line(red,   10.0f, O, red,   10.0f, axis_x );
+    line_renderer.add_line(green, 10.0f, O, green, 10.0f, axis_y );
+    line_renderer.add_line(blue,  10.0f, O, blue,  10.0f, axis_z );
+
+    const Hover_entry& content = context.scene_view.get_hover(Hover_entry::content_slot);
+    if (
+        !content.valid                  ||
+        !content.position.has_value()   ||
+        !content.normal.has_value()     ||
+        (content.scene_mesh == nullptr) ||
+        !content.geometry
+    ) {
+        return;
+    }
+
+    ERHE_VERIFY(content.scene_mesh != nullptr);
+    ERHE_VERIFY(content.scene_mesh_primitive_index != std::numeric_limits<std::size_t>::max());
+
+    erhe::geometry::Geometry& geometry = *content.geometry.get();
+    GEO::Mesh& geo_mesh = geometry.get_mesh();
+
+    const GEO::index_t facet = content.facet;
+    const GEO::index_t corner_count = geo_mesh.facets.nb_corners(content.facet);
+    if (corner_count < 3) {
+        return;
+    }
+
+    const glm::vec3 hover_position_in_world = content.position.value();
+
+    const erhe::scene::Node* node = content.scene_mesh->get_node();
+    if (node == nullptr) {
+        return;
+    }
+
+    glm::vec3 n = glm::normalize(content.normal.value());
+
+    struct Vertex_position {
+        GEO::index_t vertex;
+        glm::vec3    position;
+    };
+    std::vector<Vertex_position> vertex_positions;
+    for (GEO::index_t corner : geo_mesh.facets.corners(facet)) {
+        const GEO::index_t vertex     = geo_mesh.facet_corners.vertex(corner);
+        const GEO::vec3f   p_in_mesh_ = get_pointf(geo_mesh.vertices, vertex);
+        const glm::vec3    p_in_mesh  = to_glm_vec3(p_in_mesh_);
+        vertex_positions.emplace_back(vertex, p_in_mesh);
+    }
+
+    for (const Vertex_position& vertex_position : vertex_positions) {
+        const glm::vec3 p = node->transform_point_from_local_to_world(vertex_position.position);
+        line_renderer.add_lines(
+            glm::vec4{1.0f, 0.0f, 1.0f, 1.0f},
+            {{ p, p + n }}
+        );
+    }
+
 }
 
 void Node_convex_hull_visualization::imgui()

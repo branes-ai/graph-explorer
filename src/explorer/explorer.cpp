@@ -598,7 +598,6 @@ public:
                 m_post_processing_window         = std::make_unique<Post_processing_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_properties                     = std::make_unique<Properties                      >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_graph_window                   = std::make_unique<Graph_window                    >(*m_commands.get(),       *m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context, *m_explorer_message_bus.get());
-                m_node_convex_hull_visualization = std::make_unique<Node_convex_hull_visualization  >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context, *m_explorer_message_bus.get());
                 m_node_properties_window         = std::make_unique<Node_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_tool_properties_window         = std::make_unique<Tool_properties_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
                 m_viewport_config_window         = std::make_unique<Viewport_config_window          >(*m_imgui_renderer.get(), *m_imgui_windows.get(),  m_explorer_context);
@@ -630,6 +629,13 @@ public:
                     m_explorer_context,
                     *m_explorer_message_bus.get(),
                     *m_tools.get()
+                );
+                m_node_convex_hull_visualization = std::make_unique<Node_convex_hull_visualization>(
+                    *m_imgui_renderer.get(),
+                    *m_imgui_windows.get(),
+                    m_explorer_context,
+                    *m_explorer_message_bus.get(),
+                    *m_explorer_rendering.get()
                 );
             })  .name("Tools")
                 .succeed(imgui_renderer_task, imgui_windows_task, mesh_memory_task, explorer_rendering_task);
