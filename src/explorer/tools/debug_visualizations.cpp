@@ -94,9 +94,9 @@ constexpr vec3 axis_z         { 0.0f,  0.0f, 1.0f};
 Debug_visualizations::Debug_visualizations(
     erhe::imgui::Imgui_renderer& imgui_renderer,
     erhe::imgui::Imgui_windows&  imgui_windows,
-    Explorer_context&              explorer_context,
-    Explorer_message_bus&          explorer_message_bus,
-    Explorer_rendering&            explorer_rendering
+    Explorer_context&            explorer_context,
+    Explorer_message_bus&        explorer_message_bus,
+    Explorer_rendering&          explorer_rendering
 )
     : erhe::imgui::Imgui_window{imgui_renderer, imgui_windows, "Debug Visualizations", "debug_visualizations"}
     , m_context{explorer_context}
