@@ -259,7 +259,7 @@ void Node_properties_window::imgui()
     }
 #endif
 
-    const auto selected_graph_node = m_context.selection->get<erhe::graph::Node>();
+    const auto selected_graph_node = m_context.graph_window->get_selection().get<erhe::graph::Node>();
     if (selected_graph_node) {
         Graph_node* graph_node = dynamic_cast<Graph_node*>(selected_graph_node.get());
         if (graph_node != nullptr) {
