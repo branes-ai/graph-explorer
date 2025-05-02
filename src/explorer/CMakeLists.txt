@@ -31,6 +31,8 @@ erhe_target_sources_grouped(
     graph/node_properties.hpp
     graph/node_convex_hull_visualization.cpp
     graph/node_convex_hull_visualization.hpp
+    graph/wavefront_visualization.cpp
+    graph/wavefront_visualization.hpp
     graphics/gradients.cpp
     graphics/gradients.hpp
     graphics/icon_rasterization.cpp
@@ -74,10 +76,6 @@ erhe_target_sources_grouped(
     renderable.hpp
     renderers/composer.cpp
     renderers/composer.hpp
-    renderers/cube_instance_buffer.cpp
-    renderers/cube_instance_buffer.hpp
-    renderers/cube_renderer.cpp
-    renderers/cube_renderer.hpp
     renderers/frustum_tiler.cpp
     renderers/frustum_tiler.hpp
     renderers/id_renderer.cpp

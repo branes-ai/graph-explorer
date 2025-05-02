@@ -14,6 +14,7 @@
 #include "graph/graph_window.hpp"
 #include "graph/node_properties.hpp"
 #include "graph/node_convex_hull_visualization.hpp"
+#include "graph/wavefront_visualization.hpp"
 #include "graphics/icon_set.hpp"
 #include "operations/operation_stack.hpp"
 #include "renderers/id_renderer.hpp"
@@ -662,6 +663,22 @@ public:
             })  .name("Default scene")
                 .succeed(imgui_renderer_task, imgui_windows_task);
 
+            auto waverfront_visualization_task = taskflow.emplace([this]()
+            {
+                erhe::graphics::Scoped_gl_context ctx{m_graphics_instance->context_provider};
+                m_wavefront_visualization = std::make_unique<Wavefront_visualization>(
+                    *m_graphics_instance.get(),
+                    *m_program_interface.get(),
+                    *m_imgui_renderer.get(),
+                    *m_imgui_windows.get(),
+                    m_explorer_context,
+                    *m_explorer_message_bus.get(),
+                    *m_explorer_rendering.get(),
+                    *m_programs.get()
+                );
+            })  .name("Wavefront visualization")
+                .succeed(imgui_renderer_task, imgui_windows_task, explorer_rendering_task);
+
             auto scene_builder_task = taskflow.emplace([this]()
             {
                 erhe::graphics::Scoped_gl_context ctx{m_graphics_instance->context_provider};
@@ -672,9 +689,9 @@ public:
                     *m_imgui_renderer.get(),        //erhe::imgui::Imgui_renderer&    imgui_renderer
                     *m_imgui_windows.get(),         //erhe::imgui::Imgui_windows&     imgui_windows
                     *m_rendergraph.get(),           //erhe::rendergraph::Rendergraph& rendergraph
-                    m_explorer_context,               //Explorer_context&                 explorer_context
-                    *m_explorer_rendering.get(),      //Explorer_rendering&               explorer_rendering
-                    *m_explorer_settings.get(),       //Explorer_settings&                explorer_settings
+                    m_explorer_context,             //Explorer_context&                 explorer_context
+                    *m_explorer_rendering.get(),    //Explorer_rendering&               explorer_rendering
+                    *m_explorer_settings.get(),     //Explorer_settings&                explorer_settings
                     *m_mesh_memory.get(),           //Mesh_memory&                    mesh_memory
                     *m_post_processing.get(),       //Post_processing&                post_processing
                     *m_tools.get(),                 //Tools&                          tools
@@ -1020,6 +1037,7 @@ public:
         m_explorer_context.move_tool                      = m_move_tool             .get();
         m_explorer_context.node_convex_hull_visualization = m_node_convex_hull_visualization.get();
         m_explorer_context.node_properties_window         = m_node_properties_window.get();
+        m_explorer_context.wavefront_visualization        = m_wavefront_visualization.get();
         m_explorer_context.operation_stack                = m_operation_stack       .get();
         m_explorer_context.paint_tool                     = m_paint_tool            .get();
         m_explorer_context.physics_tool                   = m_physics_tool          .get();
@@ -1091,7 +1109,7 @@ public:
 
     std::unique_ptr<tf::Executor>       m_executor;
 
-    Explorer_context                      m_explorer_context;
+    Explorer_context                    m_explorer_context;
 
     std::shared_ptr<Scene_root>         m_default_scene;
     std::shared_ptr<Item_tree_window>   m_default_scene_browser;
@@ -1099,13 +1117,13 @@ public:
     // No dependencies (constructors)
     std::unique_ptr<erhe::commands::Commands      > m_commands;
     std::unique_ptr<erhe::scene::Scene_message_bus> m_scene_message_bus;
-    std::unique_ptr<Explorer_message_bus            > m_explorer_message_bus;
+    std::unique_ptr<Explorer_message_bus          > m_explorer_message_bus;
     std::unique_ptr<Input_state                   > m_input_state;
     std::unique_ptr<Time                          > m_time;
 
     std::unique_ptr<Clipboard                              > m_clipboard;
     std::unique_ptr<erhe::window::Context_window           > m_context_window;
-    std::unique_ptr<Explorer_settings                        > m_explorer_settings;
+    std::unique_ptr<Explorer_settings                      > m_explorer_settings;
     std::unique_ptr<erhe::graphics::Instance               > m_graphics_instance;
     std::unique_ptr<erhe::imgui::Imgui_renderer            > m_imgui_renderer;
     std::unique_ptr<erhe::renderer::Line_renderer          > m_line_renderer;
@@ -1149,6 +1167,7 @@ public:
     std::unique_ptr<Graph_window                    >        m_graph_window;
     std::unique_ptr<Node_convex_hull_visualization  >        m_node_convex_hull_visualization;
     std::unique_ptr<Node_properties_window          >        m_node_properties_window;
+    std::unique_ptr<Wavefront_visualization         >        m_wavefront_visualization;
     std::unique_ptr<Tool_properties_window          >        m_tool_properties_window;
     std::unique_ptr<Viewport_config_window          >        m_viewport_config_window;
     std::unique_ptr<erhe::imgui::Logs               >        m_logs;

@@ -148,7 +148,7 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
 
     GEO::Mesh& geo_mesh = geometry->get_mesh();
 
-    const sw::dfa::ConvexHull<int>          convex_hull  = node.convexHull();
+    const sw::dfa::ConvexHull<int>          convex_hull  = node.getConvexHull();
     const std::vector<sw::dfa::Point<int>>& vertices     = convex_hull.vertices();
     const std::vector<sw::dfa::Face>&       faces        = convex_hull.faces();
     const std::size_t                       vertex_count = vertices.size();

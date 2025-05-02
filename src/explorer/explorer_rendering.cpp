@@ -263,7 +263,7 @@ Explorer_rendering::Explorer_rendering(
 auto Explorer_rendering::create_shadow_node_for_scene_view(
     erhe::graphics::Instance&       graphics_instance,
     erhe::rendergraph::Rendergraph& rendergraph,
-    Explorer_settings&                explorer_settings,
+    Explorer_settings&              explorer_settings,
     Scene_view&                     scene_view
 ) -> std::shared_ptr<Shadow_render_node>
 {
@@ -614,7 +614,30 @@ Pipeline_renderpasses::Pipeline_renderpasses(erhe::graphics::Instance& graphics_
                 .vertex_input   = &mesh_memory.vertex_input,
                 .input_assembly = Input_assembly_state::triangles,
                 .rasterization  = Rasterization_state::cull_mode_none_depth_clamp,
-                .depth_stencil  = Depth_stencil_state::depth_test_enabled_less_or_equal_stencil_test_disabled(REVERSE_DEPTH),
+                .depth_stencil  = {
+                    .depth_test_enable   = true,
+                    .depth_write_enable  = false,
+                    .depth_compare_op    = graphics_instance.depth_function(gl::Depth_function::greater),
+                    .stencil_test_enable = true,
+                    .stencil_front = {
+                        .stencil_fail_op = gl::Stencil_op::keep,
+                        .z_fail_op       = gl::Stencil_op::keep,
+                        .z_pass_op       = gl::Stencil_op::keep,
+                        .function        = gl::Stencil_function::always,
+                        .reference       = 0,
+                        .test_mask       = 0xffu,
+                        .write_mask      = 0xffu
+                    },
+                    .stencil_back = {
+                        .stencil_fail_op = gl::Stencil_op::keep,
+                        .z_fail_op       = gl::Stencil_op::keep,
+                        .z_pass_op       = gl::Stencil_op::keep,
+                        .function        = gl::Stencil_function::always,
+                        .reference       = 0,
+                        .test_mask       = 0xffu,
+                        .write_mask      = 0xffu
+                    },
+                },
                 .color_blend    = Color_blend_state::color_blend_premultiplied
             }
         }

@@ -80,6 +80,7 @@ class Tools;
 class Transform_tool;
 class Viewport_config_window;
 class Scene_views;
+class Wavefront_visualization;
 
 class Explorer_context
 {
@@ -133,6 +134,7 @@ public:
     Move_tool*                              move_tool                     {nullptr};
     Node_convex_hull_visualization*         node_convex_hull_visualization{nullptr};
     Node_properties_window*                 node_properties_window        {nullptr};
+    Wavefront_visualization*                wavefront_visualization       {nullptr};
     Operation_stack*                        operation_stack               {nullptr};
     Paint_tool*                             paint_tool                    {nullptr};
     Physics_tool*                           physics_tool                  {nullptr};

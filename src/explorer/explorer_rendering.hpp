@@ -75,8 +75,8 @@ public:
     Explorer_rendering(
         erhe::commands::Commands& commands,
         erhe::graphics::Instance& graphics_instance,
-        Explorer_context&           editor_context,
-        Explorer_message_bus&       editor_message_bus,
+        Explorer_context&         editor_context,
+        Explorer_message_bus&     editor_message_bus,
         Mesh_memory&              mesh_memory,
         Programs&                 programs
     );
@@ -84,7 +84,7 @@ public:
     [[nodiscard]] auto create_shadow_node_for_scene_view(
         erhe::graphics::Instance&       graphics_instance,
         erhe::rendergraph::Rendergraph& rendergraph,
-        Explorer_settings&                editor_settings,
+        Explorer_settings&              editor_settings,
         Scene_view&                     scene_view
     ) -> std::shared_ptr<Shadow_render_node>;
 

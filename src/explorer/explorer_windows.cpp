@@ -18,7 +18,7 @@
 namespace explorer {
 
 Explorer_windows::Explorer_windows(
-    Explorer_context&           context,
+    Explorer_context&         context,
     erhe::commands::Commands& commands
 )
     : m_context{context}

@@ -831,6 +831,8 @@ Fly_camera_tool::Fly_camera_tool(
     m_move_forward_inactive_command .set_host(this);
     m_move_backward_active_command  .set_host(this);
     m_move_backward_inactive_command.set_host(this);
+
+    m_tumble_pivot = glm::vec3{0.0f, 0.0f, 0.0f};
 }
 
 void Fly_camera_tool::update_camera()
