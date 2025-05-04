@@ -2,11 +2,15 @@
 @rem      https://github.com/tksuoran/erhe/issues/139
 
 cmake ^
+ --fresh ^
+ -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
  -G "Visual Studio 17 2022" ^
  -A x64 ^
  -B build ^
  -S . ^
  --graphviz=erhe_cmake_dependencies.dot ^
+ --profiling-format=google-trace ^
+ --profiling-output=erhe_cmake_profiling.json ^
  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ^
  -Wno-dev ^
  -DERHE_USE_PRECOMPILED_HEADERS=OFF ^
