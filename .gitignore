@@ -18,3 +18,4 @@ vscode-cmake-build
 log.txt
 releases
 erhe_cmake_dependencies.dot*
+erhe_cmake_profiling.json
