@@ -165,9 +165,9 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
     erhe::math::Bounding_box input_aabb{};
     for (std::size_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
         const sw::dfa::Point<int>& p = vertices[vertex_index];
-        const int x = p.coords[0];
-        const int y = p.coords[1];
-        const int z = p.coords[2];
+        const int x = (p.dimension() >= 1) ? p.coords[0] : 0;
+        const int y = (p.dimension() >= 2) ? p.coords[1] : 0;
+        const int z = (p.dimension() >= 3) ? p.coords[2] : 0;
         //log_graph->info("  {}, {}, {}", x, y, z);
         input_aabb.include(glm::vec3{x, y, z});
     }
@@ -176,9 +176,14 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
     erhe::math::Bounding_box aabb{};
     for (std::size_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
         const sw::dfa::Point<int>& p = vertices[vertex_index];
-        const double x = static_cast<double>(p.coords[0]) - input_aabb.center().x;
-        const double y = static_cast<double>(p.coords[1]) - input_aabb.center().y;
-        const double z = static_cast<double>(p.coords[2]) - input_aabb.center().z;
+#if 0
+        const double x = static_cast<double>((p.dimension() >= 1) ? p.coords[0] : 0) - input_aabb.center().x;
+        const double y = static_cast<double>((p.dimension() >= 2) ? p.coords[1] : 0) - input_aabb.center().y;
+        const double z = static_cast<double>((p.dimension() >= 3) ? p.coords[2] : 0) - input_aabb.center().z;
+#endif
+        const double x = static_cast<double>((p.dimension() >= 1) ? p.coords[0] : 0);
+        const double y = static_cast<double>((p.dimension() >= 2) ? p.coords[1] : 0);
+        const double z = static_cast<double>((p.dimension() >= 3) ? p.coords[2] : 0);
         geo_mesh.vertices.point(static_cast<GEO::index_t>(vertex_index)) = GEO::vec3{static_cast<double>(x), static_cast<double>(y), static_cast<double>(z)};
         log_graph->info("  {}, {}, {}", x, y, z);
         aabb.include(glm::vec3{x, y, z});

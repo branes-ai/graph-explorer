@@ -7,9 +7,10 @@
 #include "erhe_scene_renderer/cube_renderer.hpp"
 
 namespace erhe::graphics       { class Instance; }
+namespace erhe::scene_renderer { class Node; }
 namespace erhe::scene_renderer { class Program_interface; }
 namespace erhe::imgui          { class Imgui_renderer; }
-
+namespace sw::dfa              { struct DomainFlowNode; }
 namespace explorer {
 
 class Explorer_context;
@@ -43,6 +44,11 @@ public:
 private:
     void on_message(Explorer_message& message);
 
+    [[nodiscard]] auto check_for_selection_changes(Explorer_message& message) -> bool;
+
+    void update_wavefront_visualization();
+    void fetch_wavefront               (const sw::dfa::DomainFlowNode& node, std::shared_ptr<erhe::scene::Node> scene_graph_node);
+
     bool                                      m_show{ false }; 
     int                                       m_frame_index{0};
     Explorer_context&                         m_context;
@@ -50,6 +56,7 @@ private:
     erhe::scene_renderer::Cube_renderer       m_cube_renderer;
     erhe::graphics::Vertex_input_state        m_empty_vertex_input;
     std::vector<std::size_t>                  m_frames;
+    bool                                      m_pending_update{false};
 };
 
 } // namespace explorer
