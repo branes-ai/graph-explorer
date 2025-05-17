@@ -632,8 +632,6 @@ public:
                     *m_tools.get()
                 );
                 m_node_convex_hull_visualization = std::make_unique<Node_convex_hull_visualization>(
-                    *m_imgui_renderer.get(),
-                    *m_imgui_windows.get(),
                     m_explorer_context,
                     *m_explorer_message_bus.get(),
                     *m_explorer_rendering.get()

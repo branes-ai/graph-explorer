@@ -25,23 +25,19 @@ class Explorer_message_bus;
 class Explorer_rendering;
 
 class Node_convex_hull_visualization 
-    : public erhe::imgui::Imgui_window // Later we can remove window as base class
-    , public Renderable
+    : public Renderable
 {
 public:
     Node_convex_hull_visualization(
-        erhe::imgui::Imgui_renderer& imgui_renderer,
-        erhe::imgui::Imgui_windows&  imgui_windows,
-        Explorer_context&            explorer_context,
-        Explorer_message_bus&        explorer_message_bus,
-        Explorer_rendering&          explorer_rendering
+        Explorer_context&     explorer_context,
+        Explorer_message_bus& explorer_message_bus,
+        Explorer_rendering&   explorer_rendering
     );
 
     // Implements Renderable
     void render(const Render_context& context) override;
 
-    // Implements Imgui_window
-    void imgui() override;
+    [[nodiscard]] auto get_material() -> erhe::primitive::Material&;
 
 private:
     void on_message(Explorer_message& message);

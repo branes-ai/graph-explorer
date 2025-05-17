@@ -1,6 +1,7 @@
 #include "graph/node_properties.hpp"
 #include "graph/graph_node.hpp"
 #include "graph/graph_window.hpp"
+#include "graph/node_convex_hull_visualization.hpp"
 #include "explorer_context.hpp"
 #include "tools/selection_tool.hpp"
 
@@ -8,6 +9,7 @@
 #include "erhe_imgui/imgui_node_editor.h"
 #include "erhe_imgui/imgui_windows.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
+#include "erhe_primitive/material.hpp"
 #include "erhe_bit/bit_helpers.hpp"
 #include "erhe_profile/profile.hpp"
 #include "erhe_verify/verify.hpp"
@@ -234,6 +236,13 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
         [&ui_node, node_editor]() {
             ImVec2 position = node_editor->GetNodePosition(ui_node.get_id());
             ImGui::DragFloat2("##", &position.x, 0.1f);
+        }
+    );
+    m_property_editor.add_entry(
+        "Opacity",
+        [this]() {
+            erhe::primitive::Material& material = m_context.node_convex_hull_visualization->get_material();
+            ImGui::SliderFloat("##", &material.opacity, 0.0f, 1.0f);
         }
     );
 

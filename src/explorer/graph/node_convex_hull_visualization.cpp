@@ -39,14 +39,11 @@
 namespace explorer {
 
 Node_convex_hull_visualization::Node_convex_hull_visualization(
-    erhe::imgui::Imgui_renderer& imgui_renderer,
-    erhe::imgui::Imgui_windows&  imgui_windows,
-    Explorer_context&            explorer_context,
-    Explorer_message_bus&        explorer_message_bus,
-    Explorer_rendering&          explorer_rendering
+    Explorer_context&     explorer_context,
+    Explorer_message_bus& explorer_message_bus,
+    Explorer_rendering&   explorer_rendering
 )
-    : Imgui_window{imgui_renderer, imgui_windows, "Node Convex Hull Visualization", "node_convex_hull_visualization"}
-    , m_context   {explorer_context}
+    : m_context{explorer_context}
 {
     explorer_rendering.add(this);
 
@@ -141,6 +138,7 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
         m_material = material_library->make<erhe::primitive::Material>(
             "mat_convex_hull", glm::vec3{1.0, 1.0f, 1.0f}, glm::vec2{0.3f, 0.4f}, 0.0f
         );
+        m_material->opacity = 0.5f;
     }
 
     // Build convex hull mesh
@@ -291,6 +289,11 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
     return scene_graph_node;
 }
 
+auto Node_convex_hull_visualization::get_material() -> erhe::primitive::Material&
+{
+    return *m_material.get();
+}
+
 void Node_convex_hull_visualization::render(const Render_context& context)
 {
     ERHE_PROFILE_FUNCTION();
@@ -386,10 +389,6 @@ void Node_convex_hull_visualization::render(const Render_context& context)
         );
     }
 
-}
-
-void Node_convex_hull_visualization::imgui()
-{
 }
 
 } // namespace explorer
