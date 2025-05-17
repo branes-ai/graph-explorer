@@ -6,8 +6,9 @@
 
 #include <vector>
 
-namespace erhe::scene { class Node; }
-namespace ax::NodeEditor { class EditorContext; }
+namespace erhe::scene          { class Node; }
+namespace erhe::scene_renderer { class Cube_instance_buffer; }
+namespace ax::NodeEditor       { class EditorContext; }
 
 namespace explorer {
 
@@ -28,6 +29,13 @@ public:
 
 auto get_node_edge_name(int direction) -> const char*;
 
+class Wavefront_frame
+{
+public:
+    int                                                         time;
+    std::shared_ptr<erhe::scene_renderer::Cube_instance_buffer> cube_instance_buffer;
+};
+
 class Graph_node : public erhe::graph::Node
 {
 public:
@@ -40,7 +48,12 @@ public:
 
     [[nodiscard]] auto get_payload() -> size_t;
     [[nodiscard]] auto get_convex_hull_visualization() -> std::shared_ptr<erhe::scene::Node>;
-    void set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& visualization);
+    [[nodiscard]] auto wavefront_frames() -> std::vector<Wavefront_frame>&;
+    void set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& node);
+
+    [[nodiscard]] auto get_wavefront_time_offset() const -> int;
+    void set_wavefront_time_offset(int offset);
+    void get_time_range(int& first, int& last) const;
 
     virtual void imgui();
 
@@ -72,6 +85,8 @@ protected:
     int                                m_input_pin_edge {Node_edge::left};
     int                                m_output_pin_edge{Node_edge::right};
     std::shared_ptr<erhe::scene::Node> m_convex_hull_visualization;
+    int                                m_wavefront_time_offset{};
+    std::vector<Wavefront_frame>       m_wavefront_frames;
 };
 
 } // namespace explorer

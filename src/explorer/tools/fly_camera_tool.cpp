@@ -200,9 +200,10 @@ auto Fly_camera_tumble_command::try_call_with_input(erhe::commands::Input_argume
     m_context.fly_camera_tool->tumble_relative(input.timestamp_ns, -value.x, -value.y);
     return true;
 }
+
 void Fly_camera_tumble_command::on_inactive()
 {
-        m_context.fly_camera_tool->set_cursor_relative_mode(false);
+    m_context.fly_camera_tool->set_cursor_relative_mode(false);
 }
 
 #pragma endregion Fly_camera_tumble_command
@@ -255,7 +256,8 @@ Fly_camera_active_axis_float_command::Fly_camera_active_axis_float_command(
 
 auto Fly_camera_active_axis_float_command::try_call_with_input(erhe::commands::Input_arguments& input) -> bool
 {
-    return m_context.fly_camera_tool->set_active_control_value(input.timestamp_ns, m_variable, input.variant.float_value * m_scale);
+    const float value = input.variant.float_value * m_scale;
+    return m_context.fly_camera_tool->set_active_control_value(input.timestamp_ns, m_variable, value);
 }
 #pragma endregion Fly_camera_variable_float_command
 
@@ -531,6 +533,7 @@ auto Fly_camera_tool::frame(const erhe::math::Bounding_box& bbox, Frame_mode mod
 {
     if (bbox.is_valid()) {
         m_tumble_pivot = bbox.center();
+        m_camera_controller->tumble_pivot = m_tumble_pivot;
     } else {
         return false;
     }
@@ -684,9 +687,12 @@ Fly_camera_tool::Fly_camera_tool(
     , m_active_translate_x_command    {commands, explorer_context, Variable::translate_x,  1.0 / 32.0f}
     , m_active_translate_y_command    {commands, explorer_context, Variable::translate_y, -1.0 / 32.0f}
     , m_active_translate_z_command    {commands, explorer_context, Variable::translate_z,  1.0 / 32.0f}
-    , m_active_rotate_x_command       {commands, explorer_context, Variable::rotate_x,     1.0 / 128.0f}
-    , m_active_rotate_y_command       {commands, explorer_context, Variable::rotate_y,    -1.0 / 128.0f}
-    , m_active_rotate_z_command       {commands, explorer_context, Variable::rotate_z,     1.0 / 128.0f}
+    , m_active_rotate_x_command       {commands, explorer_context, Variable::turn_x,       1.0 / 128.0f}
+    , m_active_rotate_y_command       {commands, explorer_context, Variable::turn_y,      -1.0 / 128.0f}
+    , m_active_rotate_z_command       {commands, explorer_context, Variable::turn_z,       1.0 / 128.0f}
+    , m_active_tumble_x_command       {commands, explorer_context, Variable::tumble_x,     1.0 / 128.0f}
+    , m_active_tumble_y_command       {commands, explorer_context, Variable::tumble_y,    -1.0 / 128.0f}
+    , m_active_tumble_z_command       {commands, explorer_context, Variable::tumble_z,     1.0 / 128.0f}
     , m_serialize_transform_command   {commands, explorer_context, true}
     , m_deserialize_transform_command {commands, explorer_context, false}
 
@@ -762,6 +768,9 @@ Fly_camera_tool::Fly_camera_tool(
     commands.register_command(&m_active_rotate_x_command);
     commands.register_command(&m_active_rotate_y_command);
     commands.register_command(&m_active_rotate_z_command);
+    commands.register_command(&m_active_tumble_x_command);
+    commands.register_command(&m_active_tumble_y_command);
+    commands.register_command(&m_active_tumble_z_command);
     commands.register_command(&m_serialize_transform_command);
     commands.register_command(&m_deserialize_transform_command);
 
@@ -801,9 +810,15 @@ Fly_camera_tool::Fly_camera_tool(
     commands.bind_command_to_controller_axis(&m_active_translate_x_command, 0);
     commands.bind_command_to_controller_axis(&m_active_translate_y_command, 2);
     commands.bind_command_to_controller_axis(&m_active_translate_z_command, 1);
+#if 0
     commands.bind_command_to_controller_axis(&m_active_rotate_x_command, 3);
     commands.bind_command_to_controller_axis(&m_active_rotate_y_command, 5);
     commands.bind_command_to_controller_axis(&m_active_rotate_z_command, 4);
+#else
+    commands.bind_command_to_controller_axis(&m_active_tumble_x_command, 3);
+    commands.bind_command_to_controller_axis(&m_active_tumble_y_command, 5);
+    //commands.bind_command_to_controller_axis(&m_active_tumble_z_command, 4);
+#endif
 
     explorer_message_bus.add_receiver(
         [&](Explorer_message& message) {
@@ -833,6 +848,7 @@ Fly_camera_tool::Fly_camera_tool(
     m_move_backward_inactive_command.set_host(this);
 
     m_tumble_pivot = glm::vec3{0.0f, 0.0f, 0.0f};
+    m_camera_controller->tumble_pivot = m_tumble_pivot;
 }
 
 void Fly_camera_tool::update_camera()
@@ -914,9 +930,9 @@ void Fly_camera_tool::rotation(int64_t timestamp_ns, const int rx, const int ry,
     const std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> lock_fly_camera{m_mutex};
 
     constexpr float scale = 65536.0f;
-    m_camera_controller->rotate_x.adjust(m_sensitivity * static_cast<float>(rx) / scale);
-    m_camera_controller->rotate_y.adjust(m_sensitivity * static_cast<float>(ry) / scale);
-    m_camera_controller->rotate_z.adjust(m_sensitivity * static_cast<float>(rz) / scale);
+    m_camera_controller->turn_x.adjust(m_sensitivity * static_cast<float>(rx) / scale);
+    m_camera_controller->turn_y.adjust(m_sensitivity * static_cast<float>(ry) / scale);
+    m_camera_controller->turn_z.adjust(m_sensitivity * static_cast<float>(rz) / scale);
 }
 
 void Fly_camera_tool::on_hover_viewport_change()
@@ -935,9 +951,9 @@ auto Fly_camera_tool::adjust(int64_t timestamp_ns, Variable variable, float valu
         m_camera_controller->translate_x.reset();
         m_camera_controller->translate_y.reset();
         m_camera_controller->translate_z.reset();
-        m_camera_controller->rotate_x.reset();
-        m_camera_controller->rotate_y.reset();
-        m_camera_controller->rotate_z.reset();
+        m_camera_controller->turn_x.reset();
+        m_camera_controller->turn_y.reset();
+        m_camera_controller->turn_z.reset();
         return false;
     }
 
@@ -999,8 +1015,8 @@ auto Fly_camera_tool::turn_relative(int64_t timestamp_ns, const float dx, const 
     if (false) {
         m_camera_controller->apply_rotation(rx, ry, 0.0f);
     } else {
-        m_camera_controller->get_variable(Variable::rotate_x).adjust(rx / 2.0f);
-        m_camera_controller->get_variable(Variable::rotate_y).adjust(ry / 2.0f);
+        m_camera_controller->get_variable(Variable::turn_x).adjust(rx / 2.0f);
+        m_camera_controller->get_variable(Variable::turn_y).adjust(ry / 2.0f);
     }
 
     if (m_recording) {
@@ -1029,6 +1045,7 @@ auto Fly_camera_tool::try_start_tumble() -> bool
         if (hover != nullptr) {
             if (hover->position.has_value()) {
                 m_tumble_pivot = hover->position;
+                m_camera_controller->tumble_pivot = m_tumble_pivot;
             }
         }
     }
@@ -1129,17 +1146,6 @@ auto Fly_camera_tool::track() -> bool
     m_track_plane_point = get_track_position();
     return true;
 }
-
-//void Fly_camera_tool::update_fixed_step(const Time_context&)
-//{
-//    if (!m_camera_controller) { // TODO
-//        return; 
-//    }
-//
-//    const std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> lock_fly_camera{m_mutex};
-//
-//    m_camera_controller->update_fixed_step();
-//}
 
 void Fly_camera_tool::record_translation_sample(int64_t time_ns)
 {
@@ -1284,9 +1290,9 @@ void Fly_camera_tool::imgui()
             show_input_axis_ui("Tx", m_camera_controller->translate_x);
             show_input_axis_ui("Ty", m_camera_controller->translate_y);
             show_input_axis_ui("Tz", m_camera_controller->translate_z);
-            show_input_axis_ui("Rx", m_camera_controller->rotate_x);
-            show_input_axis_ui("Ry", m_camera_controller->rotate_y);
-            show_input_axis_ui("Rz", m_camera_controller->rotate_z);
+            show_input_axis_ui("Rx", m_camera_controller->turn_x);
+            show_input_axis_ui("Ry", m_camera_controller->turn_y);
+            show_input_axis_ui("Rz", m_camera_controller->turn_z);
             show_input_axis_ui("sm", m_camera_controller->speed_modifier);
             ImGui::EndTable();
             ImGui::TreePop();

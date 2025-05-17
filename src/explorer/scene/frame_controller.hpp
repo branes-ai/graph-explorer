@@ -18,9 +18,12 @@ enum class Variable : unsigned int {
     translate_x = 0,
     translate_y = 1,
     translate_z = 2,
-    rotate_x    = 3,
-    rotate_y    = 4,
-    rotate_z    = 5
+    turn_x      = 3,
+    turn_y      = 4,
+    turn_z      = 5,
+    tumble_x    = 6,
+    tumble_y    = 7,
+    tumble_z    = 8
 };
 
 class Frame_controller : public erhe::Item<erhe::Item_base, erhe::scene::Node_attachment, Frame_controller, erhe::Item_kind::not_clonable>
@@ -64,20 +67,27 @@ public:
     [[nodiscard]] auto get_variable            (const Variable variable) -> erhe::math::Input_axis&;
     [[nodiscard]] auto get_active_control_value(const Variable variable) const -> float;
 
-    erhe::math::Input_axis rotate_x;
-    erhe::math::Input_axis rotate_y;
-    erhe::math::Input_axis rotate_z;
+    erhe::math::Input_axis turn_x;
+    erhe::math::Input_axis turn_y;
+    erhe::math::Input_axis turn_z;
+    erhe::math::Input_axis tumble_x;
+    erhe::math::Input_axis tumble_y;
+    erhe::math::Input_axis tumble_z;
     erhe::math::Input_axis translate_x;
     erhe::math::Input_axis translate_y;
     erhe::math::Input_axis translate_z;
-    float                  active_rotate_x{0.0f};
-    float                  active_rotate_y{0.0f};
-    float                  active_rotate_z{0.0f};
+    float                  active_turn_x     {0.0f};
+    float                  active_turn_y     {0.0f};
+    float                  active_turn_z     {0.0f};
+    float                  active_tumble_x   {0.0f};
+    float                  active_tumble_y   {0.0f};
+    float                  active_tumble_z   {0.0f};
     float                  active_translate_x{0.0f};
     float                  active_translate_y{0.0f};
     float                  active_translate_z{0.0f};
     erhe::math::Input_axis speed_modifier;
-    float move_speed{0.2f};
+    float                  move_speed{0.2f};
+    std::optional<glm::vec3> tumble_pivot{};
 
 private:
     glm::vec3 m_position;

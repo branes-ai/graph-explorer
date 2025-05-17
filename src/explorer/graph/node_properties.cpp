@@ -199,6 +199,35 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
         m_property_editor.pop_group();
     }
 
+    m_property_editor.push_group("Wavefront", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
+    m_property_editor.add_entry(
+        "Time offset",
+        [&ui_node]() {
+            std::size_t time_offset_ = ui_node.get_wavefront_time_offset();
+            int time_offset = static_cast<int>(time_offset_);
+            ImGui::InputInt("##", &time_offset, 1, 10);
+            if (ImGui::IsItemEdited()) {
+                ui_node.set_wavefront_time_offset(static_cast<std::size_t>(time_offset));
+            }
+        }
+    );
+    const std::vector<Wavefront_frame>& frames = ui_node.wavefront_frames();
+    if (!frames.empty()) {
+        m_property_editor.add_entry(
+            "First",
+            [&ui_node, &frames]() {
+                ImGui::Text("%zu", frames.front().time);
+            }
+        );
+        m_property_editor.add_entry(
+            "Last",
+            [&ui_node, &frames]() {
+                ImGui::Text("%zu", frames.back().time);
+            }
+        );
+    }
+    m_property_editor.pop_group();
+
     m_property_editor.push_group("Node Visual", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
     m_property_editor.add_entry(
         "Position",

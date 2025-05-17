@@ -21,12 +21,18 @@ Frame_controller::Frame_controller()
     : Item{"frame controller"}
 {
     reset();
-    rotate_x      .set_damp     (0.700f);
-    rotate_y      .set_damp     (0.700f);
-    rotate_z      .set_damp     (0.700f);
-    rotate_x      .set_max_delta(0.02f);
-    rotate_y      .set_max_delta(0.02f);
-    rotate_z      .set_max_delta(0.02f);
+    turn_x        .set_damp     (0.700f);
+    turn_y        .set_damp     (0.700f);
+    turn_z        .set_damp     (0.700f);
+    turn_x        .set_max_delta(0.02f);
+    turn_y        .set_max_delta(0.02f);
+    turn_z        .set_max_delta(0.02f);
+    tumble_x      .set_damp     (0.700f);
+    tumble_y      .set_damp     (0.700f);
+    tumble_z      .set_damp     (0.700f);
+    tumble_x      .set_max_delta(0.02f);
+    tumble_y      .set_max_delta(0.02f);
+    tumble_z      .set_max_delta(0.02f);
     translate_x   .set_damp     (0.92f);
     translate_y   .set_damp     (0.92f);
     translate_z   .set_damp     (0.92f);
@@ -55,9 +61,12 @@ auto Frame_controller::get_variable(const Variable control) -> erhe::math::Input
         case Variable::translate_x: return translate_x;
         case Variable::translate_y: return translate_y;
         case Variable::translate_z: return translate_z;
-        case Variable::rotate_x   : return rotate_x;
-        case Variable::rotate_y   : return rotate_y;
-        case Variable::rotate_z   : return rotate_z;
+        case Variable::turn_x:      return turn_x;
+        case Variable::turn_y:      return turn_y;
+        case Variable::turn_z:      return turn_z;
+        case Variable::tumble_x:    return tumble_x;
+        case Variable::tumble_y:    return tumble_y;
+        case Variable::tumble_z:    return tumble_z;
         default: {
             ERHE_FATAL("bad control %04x", static_cast<unsigned int>(control));
         }
@@ -139,9 +148,12 @@ void Frame_controller::reset()
     translate_x.reset();
     translate_y.reset();
     translate_z.reset();
-    rotate_x.reset();
-    rotate_y.reset();
-    rotate_z.reset();
+    turn_x.reset();
+    turn_y.reset();
+    turn_z.reset();
+    tumble_x.reset();
+    tumble_y.reset();
+    tumble_z.reset();
 }
 
 void Frame_controller::update()
@@ -179,9 +191,12 @@ void Frame_controller::set_active_control_value(const Variable variable, float v
         case Variable::translate_x: active_translate_x = value; break;
         case Variable::translate_y: active_translate_y = value; break;
         case Variable::translate_z: active_translate_z = value; break;
-        case Variable::rotate_x:    active_rotate_x = value; break;
-        case Variable::rotate_y:    active_rotate_y = value; break;
-        case Variable::rotate_z:    active_rotate_z = value; break;
+        case Variable::turn_x:      active_turn_x = value; break;
+        case Variable::turn_y:      active_turn_y = value; break;
+        case Variable::turn_z:      active_turn_z = value; break;
+        case Variable::tumble_x:    active_tumble_x = value; break;
+        case Variable::tumble_y:    active_tumble_y = value; break;
+        case Variable::tumble_z:    active_tumble_z = value; break;
         default: break;
     }
 }
@@ -192,9 +207,12 @@ auto Frame_controller::get_active_control_value(const Variable variable) const -
         case Variable::translate_x: return active_translate_x;
         case Variable::translate_y: return active_translate_y;
         case Variable::translate_z: return active_translate_z;
-        case Variable::rotate_x:    return active_rotate_x;
-        case Variable::rotate_y:    return active_rotate_y;
-        case Variable::rotate_z:    return active_rotate_z;
+        case Variable::turn_x:      return active_turn_x;
+        case Variable::turn_y:      return active_turn_y;
+        case Variable::turn_z:      return active_turn_z;
+        case Variable::tumble_x:    return active_tumble_x;
+        case Variable::tumble_y:    return active_tumble_y;
+        case Variable::tumble_z:    return active_tumble_z;
         default: return 0.0f;
     }
 }
@@ -207,30 +225,45 @@ void Frame_controller::update_fixed_step()
     translate_x   .update();
     translate_y   .update();
     translate_z   .update();
-    rotate_x      .update();
-    rotate_y      .update();
-    rotate_z      .update();
+    turn_x        .update();
+    turn_y        .update();
+    turn_z        .update();
+    tumble_x      .update();
+    tumble_y      .update();
+    tumble_z      .update();
     speed_modifier.update();
 
-    const float speed = move_speed + speed_modifier.current_value();
-    float tx = translate_x.current_value() + active_translate_x;
-    if (tx != 0.0f) {
-        m_position += get_axis_x() * tx * speed;
+    {
+        const float speed = move_speed + speed_modifier.current_value();
+        float tx = translate_x.current_value() + active_translate_x;
+        if (tx != 0.0f) {
+            m_position += get_axis_x() * tx * speed;
+        }
+
+        float ty = translate_y.current_value() + active_translate_y;
+        if (ty != 0.0f) {
+            m_position += get_axis_y() * ty * speed;
+        }
+
+        float tz = translate_z.current_value() + active_translate_z;
+        if (tz != 0.0f) {
+            m_position += get_axis_z() * tz * speed;
+        }
     }
 
-    float ty = translate_y.current_value() + active_translate_y;
-    if (ty != 0.0f) {
-        m_position += get_axis_y() * ty * speed;
+    {
+        float rx = turn_x.current_value() + active_turn_x;
+        float ry = turn_y.current_value() + active_turn_y;
+        float rz = turn_z.current_value() + active_turn_z;
+        apply_rotation(rx, ry, rz);
     }
 
-    float tz = translate_z.current_value() + active_translate_z;
-    if (tz != 0.0f) {
-        m_position += get_axis_z() * tz * speed;
+    if (tumble_pivot.has_value()) {
+        float rx = tumble_x.current_value() + active_tumble_x;
+        float ry = tumble_y.current_value() + active_tumble_y;
+        float rz = tumble_z.current_value() + active_tumble_z;
+        apply_tumble(tumble_pivot.value(), rx, ry, rz);
     }
-
-    float rx = rotate_x.current_value() + active_rotate_x;
-    float ry = rotate_y.current_value() + active_rotate_y;
-    apply_rotation(rx, ry, 0.0f);
 
     update();
 }

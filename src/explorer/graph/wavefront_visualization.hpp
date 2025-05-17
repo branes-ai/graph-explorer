@@ -17,6 +17,7 @@ class Explorer_context;
 class Explorer_message;
 class Explorer_message_bus;
 class Explorer_rendering;
+class Graph_node;
 class Programs;
 
 class Wavefront_visualization
@@ -47,7 +48,7 @@ private:
     [[nodiscard]] auto check_for_selection_changes(Explorer_message& message) -> bool;
 
     void update_wavefront_visualization();
-    void fetch_wavefront               (const sw::dfa::DomainFlowNode& node, std::shared_ptr<erhe::scene::Node> scene_graph_node);
+    void fetch_wavefront               (Graph_node& graph_ui_node);
 
     bool                                      m_show{ false }; 
     int                                       m_frame_index{0};
@@ -55,7 +56,6 @@ private:
     std::unique_ptr<erhe::graphics::Pipeline> m_pipeline;
     erhe::scene_renderer::Cube_renderer       m_cube_renderer;
     erhe::graphics::Vertex_input_state        m_empty_vertex_input;
-    std::vector<std::size_t>                  m_frames;
     bool                                      m_pending_update{false};
 };
 

@@ -214,6 +214,7 @@ public:
     auto set_active_control_value(int64_t timestamp_ns, Variable variable, float value) -> bool;
     auto turn_relative           (int64_t timestamp_ns, float dx, float dy) -> bool;
     auto try_start_tumble        () -> bool;
+    auto set_active_tumble       (int64_t timestamp_ns, Variable variable, float value) -> bool;
     auto tumble_relative         (int64_t timestamp_ns, float dx, float dy) -> bool;
     auto try_start_track         () -> bool;
     auto track                   () -> bool;
@@ -223,10 +224,10 @@ public:
 
     void synthesize_input();
 
-    void set_cursor_relative_mode(bool relative_mode_enabled);
+    void set_cursor_relative_mode (bool relative_mode_enabled);
 
     void record_translation_sample(int64_t timestamp_ns);
-    void record_heading_sample(int64_t timestamp_ns);
+    void record_heading_sample    (int64_t timestamp_ns);
 
 private:
     void update_camera();
@@ -255,6 +256,9 @@ private:
     Fly_camera_active_axis_float_command  m_active_rotate_x_command;
     Fly_camera_active_axis_float_command  m_active_rotate_y_command;
     Fly_camera_active_axis_float_command  m_active_rotate_z_command;
+    Fly_camera_active_axis_float_command  m_active_tumble_x_command;
+    Fly_camera_active_axis_float_command  m_active_tumble_y_command;
+    Fly_camera_active_axis_float_command  m_active_tumble_z_command;
     Fly_camera_serialization_command      m_serialize_transform_command;
     Fly_camera_serialization_command      m_deserialize_transform_command;
     std::shared_ptr<Frame_controller>     m_camera_controller;
@@ -263,6 +267,9 @@ private:
     std::optional<glm::vec3>              m_tumble_pivot;
     std::optional<glm::vec3>              m_track_plane_point;
     std::optional<glm::vec3>              m_track_plane_normal;
+    float                                 m_active_tumble_x{0.0f};
+    float                                 m_active_tumble_y{0.0f};
+    float                                 m_active_tumble_z{0.0f};
 
     ERHE_PROFILE_MUTEX(std::mutex,    m_mutex);
     float                             m_sensitivity        {1.0f};

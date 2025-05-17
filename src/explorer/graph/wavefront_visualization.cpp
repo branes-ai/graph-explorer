@@ -52,114 +52,55 @@ Wavefront_visualization::Wavefront_visualization(
             .color_blend    = erhe::graphics::Color_blend_state::color_blend_disabled
         }
     );
-
-    erhe::scene_renderer::Cube_instance_buffer& cube_instance_buffer = m_cube_renderer.get_buffer();
-
-    // TODO - Initialize from graph
-    int edge = 128;
-    float scale = static_cast<float>(edge - 1);
-    float size = 0.75f;
-    for (int x = 0; x < edge; ++x) {
-        const float r_x = static_cast<float>(x) / scale;
-        std::vector<erhe::scene_renderer::Cube_instance> cubes;
-        cubes.reserve(edge * edge);
-        for (int y = 0; y < edge; ++y) {
-            const float r_y = static_cast<float>(y) / scale;
-            for (int z = 0; z < edge; ++z) {
-                const float r_z = static_cast<float>(z) / scale;
-                cubes.emplace_back(
-                    glm::vec4{ static_cast<float>(x * 2 - 4), static_cast<float>(y * 2 - 4), static_cast<float>(z * 2 - 4), size },
-                    glm::vec4{ r_x, r_y, r_z, 1.0f }
-                );
-            }
-        }
-        size_t frame = cube_instance_buffer.append_frame(cubes);
-        m_frames.push_back(frame);
-   }
 }
 
 auto get_operator_color(sw::dfa::DomainFlowOperator op) -> glm::vec4
 {
     static_cast<void>(op);
     return glm::vec4{0.2f, 1.0f, 0.2f, 1.0f};
-#if 0
-    using namespace sw::dfa;
-    switch (op) {
-        case DomainFlowOperator::FUNCTION:                 return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::FUNCTION_ARGUMENT:        return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::FUNCTION_RETURN:          return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::FUNCTION_RESULT:          return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::ABS:                      return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::ADD:                      return glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
-        case DomainFlowOperator::CAST:                     return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::CLAMP:                    return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::CONCAT:                   return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::CONSTANT:                 return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::CONV2D:                   return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::CONV3D:                   return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::DEPTHWISE_CONV2D:         return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::EXP:                      return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::FC:                       return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::GATHER:                   return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::SUB:                      return glm::vec4{0.0f, 0.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::MUL:                      return glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
-        case DomainFlowOperator::DIV:                      return glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
-        case DomainFlowOperator::LINEAR:                   return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::MATMUL:                   return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::NEGATE:                   return glm::vec4{0.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::PAD:                      return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::MAXPOOL2D:                return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::AVGPOOL2D:                return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::RECIPROCAL:               return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::REDUCE_ALL:               return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::REDUCE_MAX:               return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::REDUCE_MIN:               return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::REDUCE_SUM:               return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::REDUCE_PROD:              return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::RELU:                     return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::ATAN:                     return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::SIGMOID:                  return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::RESHAPE:                  return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::TRANSPOSE:                return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::TRANSPOSE_CONV2D:         return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::UNKNOWN:                  return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        case DomainFlowOperator::DomainFlowOperator_COUNT: return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-        default:                                           return glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-    }
-#endif
 }
 
-void Wavefront_visualization::fetch_wavefront(const sw::dfa::DomainFlowNode& node, std::shared_ptr<erhe::scene::Node> scene_graph_node)
+void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
 {
+    std::size_t node_id = graph_ui_node.get_payload();
+    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
+    if (dfg == nullptr) {
+        m_pending_update = true;
+        return;
+    }
+    const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
+    if (!node.isOperator()) {
+        return;
+    }
+
+    std::shared_ptr<erhe::scene::Node> visualization_node = graph_ui_node.get_convex_hull_visualization();
+
     static const float size = 0.4f;
-    const glm::vec4 color = get_operator_color(node.getOperatorType());
-    const glm::mat4 world_from_node = scene_graph_node->world_from_node();
+    //const glm::vec4 color = get_operator_color(node.getOperatorType());
+    //const glm::mat4 world_from_node = scene_graph_node->world_from_node();
     const sw::dfa::Schedule<sw::dfa::DomainFlowNode::ConstraintCoefficientType>& schedule = node.getSchedule();
-    erhe::scene_renderer::Cube_instance_buffer& cube_instance_buffer = m_cube_renderer.get_buffer();
+    //erhe::scene_renderer::Cube_instance_buffer& cube_instance_buffer = m_cube_renderer.get_buffer();
+    std::vector<Wavefront_frame>& frames = graph_ui_node.wavefront_frames();
     for (
         std::map<std::size_t, sw::dfa::Wavefront>::const_iterator i = schedule.begin(), end = schedule.end();
         i != end;
         ++i
     ) {
-        //// const std::size_t time = i->first;
+        const int time = static_cast<int>(i->first);
         const sw::dfa::Wavefront& wavefront = i->second;
 
-        std::vector<erhe::scene_renderer::Cube_instance> cubes;
-        cubes.reserve(wavefront.size());
-
+        std::vector<uint32_t> cubes(wavefront.size());
+        std::size_t cube_index = 0;
         for (const sw::dfa::IndexPoint& index_point : wavefront) {
             const std::vector<int>& p = index_point.coordinates;
             const int x = (p.size() >= 1) ? p[0] : 0;
             const int y = (p.size() >= 2) ? p[1] : 0;
             const int z = (p.size() >= 3) ? p[2] : 0;
-            const glm::vec3 position = world_from_node * glm::vec4{static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), 1.0f};
-            cubes.emplace_back(
-                glm::vec4{position.x, position.y, position.z, size},
-                color
-            );
+            cubes[cube_index++] = erhe::scene_renderer::pack_x11y11z10(x, y, z);
         }
-        size_t frame = cube_instance_buffer.append_frame(cubes);
-        m_frames.push_back(frame);
+        frames.push_back(
+            Wavefront_frame{time, m_cube_renderer.make_buffer(cubes)}
+        );
     }
 }
 
@@ -169,7 +110,6 @@ auto Wavefront_visualization::check_for_selection_changes(Explorer_message& mess
 
     sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
     if (dfg == nullptr) {
-        log_graph->error("dfg is nullptr");
         m_pending_update = true;
         return false;
     }
@@ -213,26 +153,14 @@ void Wavefront_visualization::update_wavefront_visualization()
         return;
     }
 
-    erhe::scene_renderer::Cube_instance_buffer& cube_instance_buffer = m_cube_renderer.get_buffer();
-    cube_instance_buffer.clear();
-    m_frames.clear();
-    m_frame_index = 0;
-
     Selection& selection = m_context.graph_window->get_selection();
     std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
     if (selected_graph_nodes.empty()) {
         return;
     }
 
-    for (const auto& graph_ui_node : selected_graph_nodes) {
-        std::size_t node_id = graph_ui_node->get_payload();
-        std::shared_ptr<erhe::scene::Node> visualization_node = graph_ui_node->get_convex_hull_visualization();
-        const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
-
-        if (!node.isOperator() || !visualization_node) {
-            continue;
-        }
-        fetch_wavefront(node, visualization_node);
+    for (const std::shared_ptr<Graph_node>& graph_ui_node : selected_graph_nodes) {
+        fetch_wavefront(*graph_ui_node.get());
     }
     m_pending_update = false;
 }
@@ -256,17 +184,33 @@ void Wavefront_visualization::imgui()
             ImGui::Checkbox("##show", &m_show);
         }
     );
-    if (!m_frames.empty()) {
+
+    Selection& selection = m_context.graph_window->get_selection();
+    std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
+    if (selected_graph_nodes.empty()) {
+        return;
+    }
+
+    std::size_t first = std::numeric_limits<std::size_t>::max();
+    std::size_t last = std::numeric_limits<std::size_t>::lowest();
+    for (const std::shared_ptr<Graph_node>& graph_ui_node : selected_graph_nodes) {
+        const std::vector<Wavefront_frame>& frames = graph_ui_node->wavefront_frames();
+        if (frames.empty()) {
+            continue;
+        }
+        const std::size_t time_offset = graph_ui_node->get_wavefront_time_offset();
+        first = std::min(first, frames.front().time + time_offset);
+        last  = std::max(first, frames.back ().time + time_offset);
+    }
+
+    if (first < last) {
+        const int lo = static_cast<int>(first);
+        const int hi = static_cast<int>(last);
+        m_frame_index = std::clamp(m_frame_index, lo, hi);
         property_editor.add_entry(
             "Frame", 
-            [this]() {
-                ImGui::SliderInt(
-                    "##frame",
-                    &m_frame_index,
-                    0,
-                    static_cast<int>(m_frames.size()) - 1,
-                    "%d"
-                );
+            [this, lo, hi]() {
+                ImGui::SliderInt("##frame", &m_frame_index, lo, hi, "%d");
             }
         );
     }
@@ -285,17 +229,29 @@ void Wavefront_visualization::render(const Render_context& context)
         update_wavefront_visualization();
     }
 
-    if (m_frames.empty()) {
-        return;
-    }
+    Selection& selection = m_context.graph_window->get_selection();
+    std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
+    for (const std::shared_ptr<Graph_node>& graph_ui_node : selected_graph_nodes) {
+        const std::shared_ptr<erhe::scene::Node>& node   = graph_ui_node->get_convex_hull_visualization();
+        const std::vector<Wavefront_frame>&       frames = graph_ui_node->wavefront_frames();
+        if (frames.empty()) {
+            continue;
+        }
 
-    erhe::scene_renderer::Cube_renderer::Render_parameters parameters{
-        .frame    = m_frames[m_frame_index],
-        .pipeline = *m_pipeline.get(),
-        .camera   = context.camera,
-        .viewport = context.viewport
-    };
-    m_cube_renderer.render(parameters);
+        const int time_offset = graph_ui_node->get_wavefront_time_offset();
+        const int node_time   = m_frame_index - time_offset;
+        if ((node_time >= 0) && (node_time < frames.size())) {
+            erhe::scene_renderer::Cube_renderer::Render_parameters parameters{
+                .cube_instance_buffer = *frames.at(node_time).cube_instance_buffer.get(),
+                .pipeline             = *m_pipeline.get(),
+                .camera               = context.camera,
+                .node                 = node,
+                .primitive_settings   = {},
+                .viewport             = context.viewport
+            };
+            m_cube_renderer.render(parameters);
+        }
+    }
 }
 
 } // namespace explorer

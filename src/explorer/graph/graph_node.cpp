@@ -40,9 +40,35 @@ auto Graph_node::get_convex_hull_visualization() -> std::shared_ptr<erhe::scene:
     return m_convex_hull_visualization;
 }
 
-void Graph_node::set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& visualization)
+void Graph_node::set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& node)
 {
-    m_convex_hull_visualization = visualization;
+    m_convex_hull_visualization = node;
+}
+
+auto Graph_node::get_wavefront_time_offset() const -> int
+{
+    return m_wavefront_time_offset;
+}
+
+void Graph_node::get_time_range(int& first, int& last) const
+{
+    if (m_wavefront_frames.empty()) {
+        first = 0;
+        last = 0;
+        return;
+    }
+    first = m_wavefront_frames.front().time;
+    last = m_wavefront_frames.back().time;
+}
+
+void Graph_node::set_wavefront_time_offset(int offset)
+{
+    m_wavefront_time_offset = offset;
+}
+
+auto Graph_node::wavefront_frames() -> std::vector<Wavefront_frame>&
+{
+    return m_wavefront_frames;
 }
 
 void Graph_node::make_input_pin(std::size_t key, std::string_view name)
