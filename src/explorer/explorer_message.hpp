@@ -28,6 +28,7 @@ public:
     static constexpr uint64_t c_flag_bit_node_touched_operation_stack = (1u << 8);
     static constexpr uint64_t c_flag_bit_node_touched_transform_tool  = (1u << 9);
     static constexpr uint64_t c_flag_bit_animation_update             = (1u << 10);
+    static constexpr uint64_t c_flag_bit_graph_loaded                 = (1u << 11);
 };
 
 class Scene_root;

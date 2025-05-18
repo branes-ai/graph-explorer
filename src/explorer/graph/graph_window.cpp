@@ -158,6 +158,17 @@ auto Graph_window::get_node_editor() -> ax::NodeEditor::EditorContext*
     return m_node_editor.get();
 }
 
+void Graph_window::graph_loaded()
+{
+    fit();
+
+    m_context.explorer_message_bus->queue_message(
+        Explorer_message{
+            .update_flags = Message_flag_bit::c_flag_bit_graph_loaded
+        }
+    );
+}
+
 void Graph_window::fit()
 {
     m_pending_navigate_to_content = true;

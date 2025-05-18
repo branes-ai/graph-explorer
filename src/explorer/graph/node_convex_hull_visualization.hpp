@@ -40,9 +40,9 @@ public:
     [[nodiscard]] auto get_material() -> erhe::primitive::Material&;
 
 private:
-    void on_message(Explorer_message& message);
-
-    void update_bounding_box();
+    void on_message                        (Explorer_message& message);
+    void recreate_visualization_scene_graph();
+    void update_bounding_box               ();
 
     [[nodiscard]] auto add_node_convex_hull(
         const sw::dfa::DomainFlowNode& node,

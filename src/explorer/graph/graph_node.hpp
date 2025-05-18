@@ -48,7 +48,7 @@ public:
 
     void node_editor(Explorer_context& context, ax::NodeEditor::EditorContext& node_editor, Graph_window& graph_window);
 
-    [[nodiscard]] auto get_payload() -> size_t;
+    [[nodiscard]] auto get_payload() const -> size_t;
     [[nodiscard]] auto get_convex_hull_visualization() -> std::shared_ptr<erhe::scene::Node>;
     [[nodiscard]] auto get_index_space_node() -> std::shared_ptr<erhe::scene::Node>;
     [[nodiscard]] auto wavefront_frames() -> std::vector<Wavefront_frame>&;

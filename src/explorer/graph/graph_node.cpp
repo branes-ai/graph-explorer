@@ -32,7 +32,7 @@ Graph_node::Graph_node(const std::string_view label, std::size_t payload)
 {
 }
 
-auto Graph_node::get_payload() -> size_t
+auto Graph_node::get_payload() const -> size_t
 {
     return m_payload;
 }

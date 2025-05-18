@@ -57,8 +57,9 @@ public:
     auto get_ui_graph         () -> Graph&;
     auto get_node_editor      () -> ax::NodeEditor::EditorContext*;
 
-    void clear();
-    void fit  ();
+    void clear       ();
+    void fit         ();
+    void graph_loaded();
 
 private:
     void clear_constructor_subset();

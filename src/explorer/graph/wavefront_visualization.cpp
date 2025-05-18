@@ -34,7 +34,7 @@ Wavefront_visualization::Wavefront_visualization(
     : Imgui_window   {imgui_renderer, imgui_windows, "Wavefront Visualization", "waverfront_visualization"}
     , m_context      {explorer_context}
     , m_cube_renderer{graphics_instance, program_interface}
-    , m_start_color  {0.2f, 0.2f, 0.2f, 1.0f}
+    , m_start_color  {0.0f, 0.0f, 0.0f, 1.0f}
     , m_end_color    {1.0f, 1.0f, 1.0f, 1.0f}
 
 {
@@ -56,12 +56,6 @@ Wavefront_visualization::Wavefront_visualization(
             .color_blend    = erhe::graphics::Color_blend_state::color_blend_disabled
         }
     );
-}
-
-auto get_operator_color(sw::dfa::DomainFlowOperator op) -> glm::vec4
-{
-    static_cast<void>(op);
-    return glm::vec4{0.2f, 1.0f, 0.2f, 1.0f};
 }
 
 void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)

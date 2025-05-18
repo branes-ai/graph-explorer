@@ -54,42 +54,71 @@ Node_convex_hull_visualization::Node_convex_hull_visualization(
     );
 }
 
+void Node_convex_hull_visualization::recreate_visualization_scene_graph()
+{
+    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
+    if (dfg == nullptr) {
+        return;
+    }
+
+    std::vector<Graph_node*> ui_nodes;
+    Graph& ui_graph = m_context.graph_window->get_ui_graph();
+    const std::vector<erhe::graph::Node*>& nodes = ui_graph.get_nodes();
+    for (erhe::graph::Node* node : nodes) {
+        Graph_node* graph_ui_node = dynamic_cast<Graph_node*>(node);
+        if (graph_ui_node == nullptr) {
+            continue;
+        }
+        ui_nodes.push_back(graph_ui_node);
+    }
+
+    std::sort(
+        ui_nodes.begin(),
+        ui_nodes.end(),
+        [dfg](const Graph_node* lhs, const Graph_node* rhs)
+        {
+            const std::size_t lhs_node_id = lhs->get_payload();
+            const std::size_t rhs_node_id = rhs->get_payload();
+            const sw::dfa::DomainFlowNode& lhs_node = dfg->graph.node(lhs_node_id);
+            const sw::dfa::DomainFlowNode& rhs_node = dfg->graph.node(rhs_node_id);
+            return lhs_node.getDepth() < rhs_node.getDepth();
+        }
+    );
+
+    m_last_scene_bbox = {};
+
+    if (!m_root) {
+        std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
+        const glm::vec3 root_pos{0.0, 1.0f, 0.0f};
+        m_root = std::make_shared<erhe::scene::Node>("root");
+        m_root->enable_flag_bits(erhe::Item_flags::content | erhe::Item_flags::visible | erhe::Item_flags::show_in_ui);
+        m_root->set_world_from_node(erhe::math::create_translation<float>(root_pos));
+        m_root->set_parent(scene_root->get_scene().get_root_node());
+    } else {
+        m_root->remove_all_children_recursively();
+    }
+    for (Graph_node* ui_node : ui_nodes) {
+        const std::size_t node_id = ui_node->get_payload();
+        const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
+        glm::vec3 index_space_offset{0.0f, 0.0f, 0.0f};
+        std::shared_ptr<erhe::scene::Node> scene_graph_node = add_node_convex_hull(node, index_space_offset);
+        if (scene_graph_node) {
+            ui_node->set_convex_hull_visualization(scene_graph_node, index_space_offset);
+        }
+    }
+
+    if (m_last_scene_bbox.is_valid()) {
+        std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
+        m_context.fly_camera_tool->frame(m_last_scene_bbox, Frame_mode::look_at_with_standard_y_up);
+        // TODO Test Frame_mode::keep_orientation and/or Frame_mode::choose_direction_based_on_bbox
+    }
+}
+
 void Node_convex_hull_visualization::on_message(Explorer_message& message)
 {
     using namespace erhe::bit;
-    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
-    if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_selection)) {
-        bool new_nodes = false;
-        for (const auto& item : message.no_longer_selected) {
-            std::shared_ptr<Graph_node> graph_ui_node = std::dynamic_pointer_cast<Graph_node>(item);
-            if (!graph_ui_node) {
-                continue;
-            }
-            std::shared_ptr<erhe::scene::Node> scene_graph_node = graph_ui_node->get_convex_hull_visualization();
-            if (scene_graph_node) {
-                scene_graph_node->recursive_remove();
-                graph_ui_node->set_convex_hull_visualization({}, {});
-            }
-        }
-        for (const auto& item : message.newly_selected) {
-            std::shared_ptr<Graph_node> graph_ui_node = std::dynamic_pointer_cast<Graph_node>(item);
-            if (!graph_ui_node) {
-                continue;
-            }
-            std::size_t node_id = graph_ui_node->get_payload();
-            const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
-            glm::vec3 index_space_offset{0.0f, 0.0f, 0.0f};
-            std::shared_ptr<erhe::scene::Node> scene_graph_node = add_node_convex_hull(node, index_space_offset);
-            if (scene_graph_node) {
-                graph_ui_node->set_convex_hull_visualization(scene_graph_node, index_space_offset);
-                new_nodes = true;
-            }
-        }
-        if (new_nodes && m_last_scene_bbox.is_valid()) {
-            std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
-            m_context.fly_camera_tool->frame(m_last_scene_bbox, Frame_mode::look_at_with_standard_y_up);
-            // TODO Test Frame_mode::keep_orientation and/or Frame_mode::choose_direction_based_on_bbox
-        }
+    if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_graph_loaded)) {
+        recreate_visualization_scene_graph();
     }
 }
 
@@ -124,14 +153,6 @@ auto Node_convex_hull_visualization::add_node_convex_hull(
 {
     std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
     std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> scene_lock{scene_root->item_host_mutex};
-
-    if (!m_root) {
-        const glm::vec3 root_pos{0.0, 1.0f, 0.0f};
-        m_root = std::make_shared<erhe::scene::Node>("root");
-        m_root->enable_flag_bits(erhe::Item_flags::content | erhe::Item_flags::visible | erhe::Item_flags::show_in_ui);
-        m_root->set_world_from_node(erhe::math::create_translation<float>(root_pos));
-        m_root->set_parent(scene_root->get_scene().get_root_node());
-    }
 
     update_bounding_box();
 
@@ -348,7 +369,6 @@ void Node_convex_hull_visualization::render(const Render_context& context)
             {{ p, p + n }}
         );
     }
-
 }
 
 } // namespace explorer
