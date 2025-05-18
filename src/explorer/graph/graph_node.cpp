@@ -71,6 +71,16 @@ auto Graph_node::show_wavefront() const -> bool
     return m_show_wavefront;
 }
 
+void Graph_node::set_earliest_max_times(glm::ivec3 earliest_times)
+{
+    m_earliest_times = earliest_times;
+}
+
+auto Graph_node::get_earliest_max_times() const -> glm::ivec3
+{
+    return m_earliest_times;
+}
+
 void Graph_node::get_time_range(int& first, int& last) const
 {
     if (m_wavefront_frames.empty()) {

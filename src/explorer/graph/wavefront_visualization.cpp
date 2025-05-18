@@ -79,7 +79,32 @@ void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
 
     std::vector<Wavefront_frame>& frames = graph_ui_node.wavefront_frames();
     frames.clear();
+
     erhe::math::Bounding_box aabb{};
+    int earliest_max_x_time = std::numeric_limits<int>::max();
+    int earliest_max_y_time = std::numeric_limits<int>::max();
+    int earliest_max_z_time = std::numeric_limits<int>::max();
+
+    int max_x = 0;
+    int max_y = 0;
+    int max_z = 0;
+    for (
+        std::map<std::size_t, sw::dfa::Wavefront>::const_iterator i = schedule.begin(), end = schedule.end();
+        i != end;
+        ++i
+    ) {
+        const sw::dfa::Wavefront& wavefront = i->second;
+        for (const sw::dfa::IndexPoint& index_point : wavefront) {
+            const std::vector<int>& p = index_point.coordinates;
+            const int x = (p.size() >= 1) ? p[0] : 0;
+            const int y = (p.size() >= 2) ? p[1] : 0;
+            const int z = (p.size() >= 3) ? p[2] : 0;
+            max_x = std::max(max_x, x);
+            max_y = std::max(max_y, y);
+            max_z = std::max(max_z, z);
+        }
+    }
+
     for (
         std::map<std::size_t, sw::dfa::Wavefront>::const_iterator i = schedule.begin(), end = schedule.end();
         i != end;
@@ -90,11 +115,21 @@ void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
 
         std::vector<uint32_t> cubes(wavefront.size());
         std::size_t cube_index = 0;
+
         for (const sw::dfa::IndexPoint& index_point : wavefront) {
             const std::vector<int>& p = index_point.coordinates;
             const int x = (p.size() >= 1) ? p[0] : 0;
             const int y = (p.size() >= 2) ? p[1] : 0;
             const int z = (p.size() >= 3) ? p[2] : 0;
+            if (x == max_x) {
+                earliest_max_x_time = std::min(earliest_max_x_time, time);
+            }
+            if (y == max_y) {
+                earliest_max_y_time = std::min(earliest_max_y_time, time);
+            }
+            if (z == max_z) {
+                earliest_max_z_time = std::min(earliest_max_z_time, time);
+            }
             aabb.include(glm::vec3{x, y, z});
             cubes[cube_index++] = erhe::scene_renderer::pack_x11y11z10(x, y, z);
         }
@@ -116,6 +151,7 @@ void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
             return lhs.time < rhs.time;
         }
     );
+    graph_ui_node.set_earliest_max_times(glm::ivec3{earliest_max_x_time, earliest_max_y_time, earliest_max_z_time});
 }
 
 void Wavefront_visualization::update_wavefront_visualization()
@@ -144,11 +180,113 @@ void Wavefront_visualization::on_message(Explorer_message& message)
     using namespace erhe::bit;
     if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_graph_loaded)) {
         update_wavefront_visualization();
+        apply_baseline();
+    }
+}
+
+void Wavefront_visualization::apply_baseline()
+{
+    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
+    if (dfg == nullptr) {
+        return;
+    }
+
+    std::vector<Graph_node*> ui_nodes;
+    Graph& ui_graph = m_context.graph_window->get_ui_graph();
+    const std::vector<erhe::graph::Node*>& nodes = ui_graph.get_nodes();
+    for (erhe::graph::Node* node : nodes) {
+        Graph_node* graph_ui_node = dynamic_cast<Graph_node*>(node);
+        if (graph_ui_node == nullptr) {
+            continue;
+        }
+        ui_nodes.push_back(graph_ui_node);
+    }
+
+    std::sort(
+        ui_nodes.begin(),
+        ui_nodes.end(),
+        [dfg](const Graph_node* lhs, const Graph_node* rhs)
+        {
+            const std::size_t lhs_node_id = lhs->get_payload();
+            const std::size_t rhs_node_id = rhs->get_payload();
+            const sw::dfa::DomainFlowNode& lhs_node = dfg->graph.node(lhs_node_id);
+            const sw::dfa::DomainFlowNode& rhs_node = dfg->graph.node(rhs_node_id);
+            return lhs_node.getDepth() < rhs_node.getDepth();
+        }
+    );
+
+    int last = 0;
+    for (Graph_node* ui_node : ui_nodes) {
+        if (!ui_node->show_wavefront()) {
+            continue;
+        }
+        const std::vector<Wavefront_frame>& frames = ui_node->wavefront_frames();
+        if (frames.empty()) {
+            continue;
+        }
+        ui_node->set_wavefront_time_offset(last);
+        last += (frames.back().time + 1);
+    }
+}
+
+void Wavefront_visualization::apply_optimized()
+{
+    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
+    if (dfg == nullptr) {
+        return;
+    }
+
+    std::vector<Graph_node*> ui_nodes;
+    Graph& ui_graph = m_context.graph_window->get_ui_graph();
+    const std::vector<erhe::graph::Node*>& nodes = ui_graph.get_nodes();
+    for (erhe::graph::Node* node : nodes) {
+        Graph_node* graph_ui_node = dynamic_cast<Graph_node*>(node);
+        if (graph_ui_node == nullptr) {
+            continue;
+        }
+        ui_nodes.push_back(graph_ui_node);
+    }
+
+    std::sort(
+        ui_nodes.begin(),
+        ui_nodes.end(),
+        [dfg](const Graph_node* lhs, const Graph_node* rhs)
+        {
+            const std::size_t lhs_node_id = lhs->get_payload();
+            const std::size_t rhs_node_id = rhs->get_payload();
+            const sw::dfa::DomainFlowNode& lhs_node = dfg->graph.node(lhs_node_id);
+            const sw::dfa::DomainFlowNode& rhs_node = dfg->graph.node(rhs_node_id);
+            return lhs_node.getDepth() < rhs_node.getDepth();
+        }
+    );
+
+    int last = 0;
+    for (Graph_node* ui_node : ui_nodes) {
+        if (!ui_node->show_wavefront()) {
+            continue;
+        }
+        const std::vector<Wavefront_frame>& frames = ui_node->wavefront_frames();
+        if (frames.empty()) {
+            continue;
+        }
+        ui_node->set_wavefront_time_offset(last);
+        glm::ivec3 earliest_times = ui_node->get_earliest_max_times();
+        last += (earliest_times.x + 1);
     }
 }
 
 void Wavefront_visualization::imgui()
 {
+    const auto button_size = ImVec2{ImGui::GetContentRegionAvail().x, 0.0f};
+    const bool baseline  = ImGui::Button("Baseline",  button_size);
+    const bool optimized = ImGui::Button("Optimized", button_size);
+    if (baseline) {
+        apply_baseline();
+    }
+    if (optimized) {
+        apply_optimized();
+    }
+
     Property_editor property_editor;
 
     property_editor.add_entry(
@@ -191,9 +329,6 @@ void Wavefront_visualization::render(const Render_context& context)
     if (m_pending_update) {
         update_wavefront_visualization();
     }
-
-    Selection& selection = m_context.graph_window->get_selection();
-    std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
 
     std::size_t first = std::numeric_limits<std::size_t>::max();
     std::size_t last  = std::numeric_limits<std::size_t>::lowest();

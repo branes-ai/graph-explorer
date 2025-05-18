@@ -58,7 +58,8 @@ public:
     [[nodiscard]] auto show_wavefront() const -> bool;
     void set_wavefront_time_offset(int offset);
     void get_time_range(int& first, int& last) const;
-
+    void set_earliest_max_times(glm::ivec3 earliest_times);
+    [[nodiscard]] auto get_earliest_max_times() const -> glm::ivec3;
 
     virtual void imgui();
 
@@ -93,6 +94,7 @@ protected:
     std::shared_ptr<erhe::scene::Node> m_index_space_node;
     int                                m_wavefront_time_offset{};
     std::vector<Wavefront_frame>       m_wavefront_frames;
+    glm::ivec3                         m_earliest_times{0, 0, 0};
     bool                               m_show_wavefront{true};
 };
 

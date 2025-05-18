@@ -48,6 +48,9 @@ private:
     void update_wavefront_visualization();
     void fetch_wavefront               (Graph_node& graph_ui_node);
 
+    void apply_baseline ();
+    void apply_optimized();
+
     Explorer_context&                         m_context;
     erhe::scene_renderer::Cube_renderer       m_cube_renderer;
     erhe::graphics::Vertex_input_state        m_empty_vertex_input;
