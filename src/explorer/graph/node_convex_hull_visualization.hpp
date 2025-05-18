@@ -44,7 +44,10 @@ private:
 
     void update_bounding_box();
 
-    [[nodiscard]] auto add_node_convex_hull(const sw::dfa::DomainFlowNode& node) -> std::shared_ptr<erhe::scene::Node>;
+    [[nodiscard]] auto add_node_convex_hull(
+        const sw::dfa::DomainFlowNode& node,
+        glm::vec3&                     index_space_offset
+    ) -> std::shared_ptr<erhe::scene::Node>;
 
     Explorer_context&                               m_context;
     std::vector<std::shared_ptr<erhe::graph::Node>> m_visualized_nodes;

@@ -7,6 +7,8 @@
 #include "erhe_defer/defer.hpp"
 #include "erhe_graph/link.hpp"
 #include "erhe_graph/pin.hpp"
+#include "erhe_math/math_util.hpp"
+#include "erhe_scene/node.hpp"
 
 #include "erhe_imgui/imgui_node_editor.h"
 #include "erhe_imgui/imgui_renderer.hpp"
@@ -40,9 +42,23 @@ auto Graph_node::get_convex_hull_visualization() -> std::shared_ptr<erhe::scene:
     return m_convex_hull_visualization;
 }
 
-void Graph_node::set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& node)
+auto Graph_node::get_index_space_node() -> std::shared_ptr<erhe::scene::Node>
+{
+    return m_index_space_node;
+}
+
+
+void Graph_node::set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& node, const glm::vec3& index_space_offset)
 {
     m_convex_hull_visualization = node;
+
+    if (m_index_space_node) {
+        m_index_space_node->recursive_remove();
+        m_index_space_node.reset();
+    }
+    m_index_space_node = std::make_shared<erhe::scene::Node>("offset");
+    m_index_space_node->set_parent          (node);
+    m_index_space_node->set_parent_from_node(erhe::math::create_translation<float>(index_space_offset));
 }
 
 auto Graph_node::get_wavefront_time_offset() const -> int

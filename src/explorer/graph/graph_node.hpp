@@ -50,8 +50,9 @@ public:
 
     [[nodiscard]] auto get_payload() -> size_t;
     [[nodiscard]] auto get_convex_hull_visualization() -> std::shared_ptr<erhe::scene::Node>;
+    [[nodiscard]] auto get_index_space_node() -> std::shared_ptr<erhe::scene::Node>;
     [[nodiscard]] auto wavefront_frames() -> std::vector<Wavefront_frame>&;
-    void set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& node);
+    void set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& node, const glm::vec3& index_space_offset);
 
     [[nodiscard]] auto get_wavefront_time_offset() const -> int;
     void set_wavefront_time_offset(int offset);
@@ -87,6 +88,7 @@ protected:
     int                                m_input_pin_edge {Node_edge::left};
     int                                m_output_pin_edge{Node_edge::right};
     std::shared_ptr<erhe::scene::Node> m_convex_hull_visualization;
+    std::shared_ptr<erhe::scene::Node> m_index_space_node;
     int                                m_wavefront_time_offset{};
     std::vector<Wavefront_frame>       m_wavefront_frames;
 };

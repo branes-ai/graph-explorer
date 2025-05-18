@@ -68,7 +68,7 @@ void Node_convex_hull_visualization::on_message(Explorer_message& message)
             std::shared_ptr<erhe::scene::Node> scene_graph_node = graph_ui_node->get_convex_hull_visualization();
             if (scene_graph_node) {
                 scene_graph_node->recursive_remove();
-                graph_ui_node->set_convex_hull_visualization({});
+                graph_ui_node->set_convex_hull_visualization({}, {});
             }
         }
         for (const auto& item : message.newly_selected) {
@@ -78,9 +78,10 @@ void Node_convex_hull_visualization::on_message(Explorer_message& message)
             }
             std::size_t node_id = graph_ui_node->get_payload();
             const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
-            std::shared_ptr<erhe::scene::Node> scene_graph_node = add_node_convex_hull(node);
+            glm::vec3 index_space_offset{0.0f, 0.0f, 0.0f};
+            std::shared_ptr<erhe::scene::Node> scene_graph_node = add_node_convex_hull(node, index_space_offset);
             if (scene_graph_node) {
-                graph_ui_node->set_convex_hull_visualization(scene_graph_node);
+                graph_ui_node->set_convex_hull_visualization(scene_graph_node, index_space_offset);
                 new_nodes = true;
             }
         }
@@ -116,9 +117,11 @@ void Node_convex_hull_visualization::update_bounding_box()
     );
 }
 
-auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainFlowNode& node) -> std::shared_ptr<erhe::scene::Node>
+auto Node_convex_hull_visualization::add_node_convex_hull(
+    const sw::dfa::DomainFlowNode& node,
+    glm::vec3&                     index_space_offset
+) -> std::shared_ptr<erhe::scene::Node>
 {
-    std::shared_ptr<erhe::scene::Node> scene_graph_node{};
     std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
     std::lock_guard<ERHE_PROFILE_LOCKABLE_BASE(std::mutex)> scene_lock{scene_root->item_host_mutex};
 
@@ -151,9 +154,9 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
     const std::vector<sw::dfa::Face>&       faces        = convex_hull.faces();
     const std::size_t                       vertex_count = vertices.size();
     const std::size_t                       face_count   = faces.size();
-    log_graph->info("Convex hull for {}: vertex count = {}, face count = {}", node.getName(), vertex_count, face_count);
     if ((vertex_count < 3) || (face_count < 1)) {
         log_graph->warn("Not enough vertices / faces for node convex hull mesh");
+        index_space_offset = glm::vec3{0.0f, 0.0f, 0.0f};
         return {};
     }
     geo_mesh.vertices.set_double_precision();
@@ -166,40 +169,30 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
         const int x = (p.dimension() >= 1) ? p.coords[0] : 0;
         const int y = (p.dimension() >= 2) ? p.coords[1] : 0;
         const int z = (p.dimension() >= 3) ? p.coords[2] : 0;
-        //log_graph->info("  {}, {}, {}", x, y, z);
         input_aabb.include(glm::vec3{x, y, z});
     }
 
     // Second pass - translate vertices so that (0, 0, 0) is center
     erhe::math::Bounding_box aabb{};
+    index_space_offset = - input_aabb.center();
     for (std::size_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
         const sw::dfa::Point<int>& p = vertices[vertex_index];
-#if 0
-        const double x = static_cast<double>((p.dimension() >= 1) ? p.coords[0] : 0) - input_aabb.center().x;
-        const double y = static_cast<double>((p.dimension() >= 2) ? p.coords[1] : 0) - input_aabb.center().y;
-        const double z = static_cast<double>((p.dimension() >= 3) ? p.coords[2] : 0) - input_aabb.center().z;
-#endif
-        const double x = static_cast<double>((p.dimension() >= 1) ? p.coords[0] : 0);
-        const double y = static_cast<double>((p.dimension() >= 2) ? p.coords[1] : 0);
-        const double z = static_cast<double>((p.dimension() >= 3) ? p.coords[2] : 0);
+        const double x = static_cast<double>((p.dimension() >= 1) ? p.coords[0] : 0) + index_space_offset.x;
+        const double y = static_cast<double>((p.dimension() >= 2) ? p.coords[1] : 0) + index_space_offset.y;
+        const double z = static_cast<double>((p.dimension() >= 3) ? p.coords[2] : 0) + index_space_offset.z;
         geo_mesh.vertices.point(static_cast<GEO::index_t>(vertex_index)) = GEO::vec3{static_cast<double>(x), static_cast<double>(y), static_cast<double>(z)};
-        log_graph->info("  {}, {}, {}", x, y, z);
         aabb.include(glm::vec3{x, y, z});
     }
     geo_mesh.vertices.set_single_precision();
     for (std::size_t face_index = 0; face_index < face_count; ++face_index) {
         const sw::dfa::Face& face = faces[face_index];
         const std::size_t corner_count = face.num_vertices();
-        std::stringstream ss;
-        ss << fmt::format("  Face {} with {} corners:", face_index, corner_count);
         GEO::index_t facet = geo_mesh.facets.create_polygon(static_cast<GEO::index_t>(corner_count));
         const std::vector<size_t>& corner_vertices = face.vertices();
         for (std::size_t local_corner_index = 0; local_corner_index < corner_count; ++local_corner_index) {
             const std::size_t vertex = corner_vertices[local_corner_index];
-            ss << fmt::format(" {}", vertex);
             geo_mesh.facets.set_vertex(facet, static_cast<GEO::index_t>(local_corner_index), static_cast<GEO::index_t>(vertex));
         }
-        log_graph->info("    {}", ss.str());
     }
 
     const uint64_t geometry_process_flags =
@@ -219,39 +212,6 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
     }
     GEO::mesh_reorient(geo_mesh, nullptr);
     geometry->process(geometry_process_flags);
-
-#if 0
-//#else // Old API - this path gets faces correctly oriented but the new API that has explicit faces will be nicer
-    // Extract points from node
-    std::vector<glm::vec3> convex_hull_points;
-    const sw::dfa::PointSet points = node.convexHullPointSet();
-    if (points.pointSet.size() < 4) {
-        log_graph->info("Not enough points for convex hull for {}:", node.getName());
-        return {};
-    }
-
-    log_graph->info("Convex hull input points for {}:", node.getName());
-        for (const sw::dfa::Point<int>& p : points.pointSet) {
-        log_graph->info("  {}, {}, {}", p.coords[0], p.coords[1], p.coords[2]);
-        convex_hull_points.emplace_back(p.coords[0], p.coords[1], p.coords[2]);
-    }
-    erhe::geometry::shapes::make_convex_hull(geo_mesh, convex_hull_points);
-    const uint64_t geometry_process_flags =
-        erhe::geometry::Geometry::process_flag_connect |
-        erhe::geometry::Geometry::process_flag_build_edges |
-        erhe::geometry::Geometry::process_flag_compute_facet_centroids |
-        erhe::geometry::Geometry::process_flag_compute_smooth_vertex_normals |
-        erhe::geometry::Geometry::process_flag_generate_facet_texture_coordinates |
-        erhe::geometry::Geometry::process_flag_merge_coplanar_neighbors;
-    geometry->process(geometry_process_flags);
-    log_graph->info("Convex hull output points for {}:", node.getName());
-    erhe::math::Bounding_box aabb{};
-    for (GEO::index_t vertex : geo_mesh.vertices) {
-        const GEO::vec3f p = get_pointf(geo_mesh.vertices, vertex);
-        log_graph->info("  {}, {}, {}", p.x, p.y, p.z);
-        aabb.include(glm::vec3{p.x, p.y, p.z});
-    }
-#endif
 
     // Build buffer mesh
     Mesh_memory& mesh_memory = *m_context.mesh_memory;
@@ -276,7 +236,7 @@ auto Node_convex_hull_visualization::add_node_convex_hull(const sw::dfa::DomainF
         : -aabb.center().x;
 
     ERHE_VERIFY(primitive.render_shape->make_raytrace(geo_mesh));
-    scene_graph_node = std::make_shared<erhe::scene::Node>("node_convex_hull");
+    std::shared_ptr<erhe::scene::Node> scene_graph_node = std::make_shared<erhe::scene::Node>("node_convex_hull");
     auto scene_mesh = std::make_shared<erhe::scene::Mesh>("", primitive);
     scene_mesh->layer_id = scene_root->layers().content()->id;
     scene_mesh->enable_flag_bits(mesh_flags);
@@ -323,9 +283,9 @@ void Node_convex_hull_visualization::render(const Render_context& context)
 
     //for (const auto& node : scene_root->get_hosted_scene()->get_flat_nodes()) {
     //    if (node && should_visualize(m_node_axis_visualization, node)) {
-    const glm::vec4 red  {1.0f, 0.0f, 0.0f, 1.0f};
-    const glm::vec4 green{0.0f, 1.0f, 0.0f, 1.0f};
-    const glm::vec4 blue {0.0f, 0.0f, 1.0f, 1.0f};
+    const glm::vec4 red   {1.0f, 0.0f, 0.0f, 1.0f};
+    const glm::vec4 green {0.0f, 1.0f, 0.0f, 1.0f};
+    const glm::vec4 blue  {0.0f, 0.0f, 1.0f, 1.0f};
     const glm::vec3 O     { 0.0f };
     const glm::vec3 axis_x{1000.0f, 0.0f, 0.0f};
     const glm::vec3 axis_y{0.0f, 1000.0f, 0.0f};

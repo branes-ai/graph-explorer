@@ -77,8 +77,6 @@ void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
         return;
     }
 
-    std::shared_ptr<erhe::scene::Node> visualization_node = graph_ui_node.get_convex_hull_visualization();
-
     static const float size = 0.4f;
     const sw::dfa::Schedule<sw::dfa::DomainFlowNode::ConstraintCoefficientType>& schedule = node.getSchedule();
 
@@ -272,9 +270,9 @@ void Wavefront_visualization::render(const Render_context& context)
     Selection& selection = m_context.graph_window->get_selection();
     std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
     for (const std::shared_ptr<Graph_node>& graph_ui_node : selected_graph_nodes) {
-        const std::shared_ptr<erhe::scene::Node>& node   = graph_ui_node->get_convex_hull_visualization();
+        const std::shared_ptr<erhe::scene::Node>& node   = graph_ui_node->get_index_space_node();
         const std::vector<Wavefront_frame>&       frames = graph_ui_node->wavefront_frames();
-        if (frames.empty()) {
+        if (!node || frames.empty()) {
             continue;
         }
 
