@@ -107,6 +107,10 @@ void Node_convex_hull_visualization::recreate_visualization_scene_graph()
         }
     }
 
+    update_bounding_box();
+    const glm::vec3 root_pos{0.0f, 0.5f * m_last_scene_bbox.diagonal().y, 0.0f};
+    m_root->set_world_from_node(erhe::math::create_translation<float>(root_pos));
+
     if (m_last_scene_bbox.is_valid()) {
         std::shared_ptr<Scene_root> scene_root = m_context.scene_builder->get_scene_root();
         m_context.fly_camera_tool->frame(m_last_scene_bbox, Frame_mode::look_at_with_standard_y_up);
@@ -162,7 +166,7 @@ auto Node_convex_hull_visualization::add_node_convex_hull(
         m_material = material_library->make<erhe::primitive::Material>(
             "mat_convex_hull", glm::vec3{1.0, 1.0f, 1.0f}, glm::vec2{0.3f, 0.4f}, 0.0f
         );
-        m_material->opacity = 0.5f;
+        m_material->opacity = 0.25f;
     }
 
     // Build convex hull mesh

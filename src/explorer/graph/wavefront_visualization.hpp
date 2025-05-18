@@ -53,7 +53,7 @@ private:
     erhe::graphics::Vertex_input_state        m_empty_vertex_input;
     bool                                      m_pending_update{false};
     int                                       m_frame_index   {0};
-    float                                     m_cube_size     {0.4f};
+    float                                     m_cube_size     {1.0f};
     float                                     m_start_color[4];
     float                                     m_end_color  [4];
     std::unique_ptr<erhe::graphics::Pipeline> m_pipeline;
