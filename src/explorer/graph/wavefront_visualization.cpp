@@ -13,6 +13,7 @@
 #include "erhe_bit/bit_helpers.hpp"
 #include "erhe_imgui/imgui_windows.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
+#include "erhe_math/math_util.hpp"
 #include "erhe_scene/node.hpp"
 #include "erhe_scene_renderer/cube_instance_buffer.hpp"
 
@@ -33,6 +34,9 @@ Wavefront_visualization::Wavefront_visualization(
     : Imgui_window   {imgui_renderer, imgui_windows, "Wavefront Visualization", "waverfront_visualization"}
     , m_context      {explorer_context}
     , m_cube_renderer{graphics_instance, program_interface}
+    , m_start_color  {0.2f, 0.2f, 0.2f, 1.0f}
+    , m_end_color    {1.0f, 1.0f, 1.0f, 1.0f}
+
 {
     explorer_message_bus.add_receiver(
         [&](Explorer_message& message) {
@@ -76,11 +80,11 @@ void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
     std::shared_ptr<erhe::scene::Node> visualization_node = graph_ui_node.get_convex_hull_visualization();
 
     static const float size = 0.4f;
-    //const glm::vec4 color = get_operator_color(node.getOperatorType());
-    //const glm::mat4 world_from_node = scene_graph_node->world_from_node();
     const sw::dfa::Schedule<sw::dfa::DomainFlowNode::ConstraintCoefficientType>& schedule = node.getSchedule();
-    //erhe::scene_renderer::Cube_instance_buffer& cube_instance_buffer = m_cube_renderer.get_buffer();
+
     std::vector<Wavefront_frame>& frames = graph_ui_node.wavefront_frames();
+    frames.clear();
+    erhe::math::Bounding_box aabb{};
     for (
         std::map<std::size_t, sw::dfa::Wavefront>::const_iterator i = schedule.begin(), end = schedule.end();
         i != end;
@@ -96,12 +100,27 @@ void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
             const int x = (p.size() >= 1) ? p[0] : 0;
             const int y = (p.size() >= 2) ? p[1] : 0;
             const int z = (p.size() >= 3) ? p[2] : 0;
+            aabb.include(glm::vec3{x, y, z});
             cubes[cube_index++] = erhe::scene_renderer::pack_x11y11z10(x, y, z);
         }
         frames.push_back(
-            Wavefront_frame{time, m_cube_renderer.make_buffer(cubes)}
+            Wavefront_frame{{}, {}, m_cube_renderer.make_buffer(cubes), time}
         );
     }
+    glm::vec3 color_bias = -aabb.min;
+    glm::vec3 color_scale = glm::vec3{1.0f} / aabb.diagonal();
+    for (Wavefront_frame& frame : frames) {
+        frame.color_bias  = glm::vec4{color_bias, 0.0f};
+        frame.color_scale = glm::vec4{color_scale, 1.0f};
+    }
+    std::sort(
+        frames.begin(),
+        frames.end(),
+        [](const Wavefront_frame& lhs, const Wavefront_frame& rhs)
+        {
+            return lhs.time < rhs.time;
+        }
+    );
 }
 
 auto Wavefront_visualization::check_for_selection_changes(Explorer_message& message) -> bool
@@ -185,6 +204,27 @@ void Wavefront_visualization::imgui()
         }
     );
 
+    property_editor.add_entry(
+        "Point Size", 
+        [this]() {
+            ImGui::SliderFloat("##", &m_cube_size, 0.0, 1.0);
+        }
+    );
+
+    property_editor.add_entry(
+        "Start Color",
+        [this]() {
+            ImGui::ColorEdit3("##", m_start_color, ImGuiColorEditFlags_NoAlpha);
+        }
+    );
+
+    property_editor.add_entry(
+        "End Color", 
+        [this]() {
+            ImGui::ColorEdit3("##", m_end_color, ImGuiColorEditFlags_NoAlpha);
+        }
+    );
+
     Selection& selection = m_context.graph_window->get_selection();
     std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
     if (selected_graph_nodes.empty()) {
@@ -241,13 +281,19 @@ void Wavefront_visualization::render(const Render_context& context)
         const int time_offset = graph_ui_node->get_wavefront_time_offset();
         const int node_time   = m_frame_index - time_offset;
         if ((node_time >= 0) && (node_time < frames.size())) {
+            const Wavefront_frame& frame = frames.at(node_time);
             erhe::scene_renderer::Cube_renderer::Render_parameters parameters{
-                .cube_instance_buffer = *frames.at(node_time).cube_instance_buffer.get(),
+                .cube_instance_buffer = *frame.cube_instance_buffer.get(),
                 .pipeline             = *m_pipeline.get(),
                 .camera               = context.camera,
                 .node                 = node,
                 .primitive_settings   = {},
-                .viewport             = context.viewport
+                .viewport             = context.viewport,
+                .cube_size            = glm::vec4{m_cube_size, m_cube_size, m_cube_size, 0.0f},
+                .color_bias           = frame.color_bias,
+                .color_scale          = frame.color_scale,
+                .color_start          = glm::vec4{m_start_color[0], m_start_color[1], m_start_color[2], 1.0f},
+                .color_end            = glm::vec4{m_end_color[0], m_end_color[1], m_end_color[2], 1.0f}
             };
             m_cube_renderer.render(parameters);
         }

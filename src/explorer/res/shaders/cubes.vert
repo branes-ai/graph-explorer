@@ -1,4 +1,10 @@
 out vec3 v_pos_world;
+out vec3 v_color;
+
+vec3 remap(vec3 x, vec3 to_low, vec3 to_high)
+{
+    return x * (to_high - to_low) + to_low;
+}
 
 void main()
 {
@@ -18,8 +24,8 @@ void main()
     uint z            = (packed_xyz >> 22) & 0x3ffu;
     vec3 instance_pos = vec3(float(x), float(y), float(z));
 
-    float instance_size = 0.4;
-    vec3  view_position_in_world = vec3(
+    vec3 instance_size = cube_control.cube_control[0].cube_size.xyz;
+    vec3 view_position_in_world = vec3(
         camera.cameras[0].world_from_node[3][0],
         camera.cameras[0].world_from_node[3][1],
         camera.cameras[0].world_from_node[3][2]
@@ -40,6 +46,8 @@ void main()
     mat4 clip_from_world = camera.cameras[0].clip_from_world;
 
     v_pos_world = pos_world;
+    vec3 color  = cube_control.cube_control[0].color_scale.xyz * instance_pos + cube_control.cube_control[0].color_bias.xyz;
+    v_color     = remap(color, cube_control.cube_control[0].color_start.xyz, cube_control.cube_control[0].color_end.xyz);
     gl_Position = clip_from_world * vec4(pos_world, 1.0);
 }
 

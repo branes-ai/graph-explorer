@@ -32,8 +32,10 @@ auto get_node_edge_name(int direction) -> const char*;
 class Wavefront_frame
 {
 public:
-    int                                                         time;
-    std::shared_ptr<erhe::scene_renderer::Cube_instance_buffer> cube_instance_buffer;
+    glm::vec4                                                   color_bias {0.0f, 0.0f, 0.0f, 0.0f};
+    glm::vec4                                                   color_scale{1.0f, 1.0f, 1.0f, 1.0f};
+    std::shared_ptr<erhe::scene_renderer::Cube_instance_buffer> cube_instance_buffer{};
+    int                                                         time{0};
 };
 
 class Graph_node : public erhe::graph::Node
