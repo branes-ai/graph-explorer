@@ -1,7 +1,6 @@
 #include "graph/node_properties.hpp"
 #include "graph/graph_node.hpp"
 #include "graph/graph_window.hpp"
-#include "graph/node_convex_hull_visualization.hpp"
 #include "explorer_context.hpp"
 #include "tools/selection_tool.hpp"
 
@@ -9,7 +8,6 @@
 #include "erhe_imgui/imgui_node_editor.h"
 #include "erhe_imgui/imgui_windows.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
-#include "erhe_primitive/material.hpp"
 #include "erhe_bit/bit_helpers.hpp"
 #include "erhe_profile/profile.hpp"
 #include "erhe_verify/verify.hpp"
@@ -76,43 +74,6 @@ void Node_properties_window::item_flags(const std::shared_ptr<erhe::Item_base>& 
             }
         });
     }
-
-    m_property_editor.pop_group();
-}
-
-void Node_properties_window::item_properties(const std::shared_ptr<erhe::Item_base>& item_in)
-{
-    ERHE_PROFILE_FUNCTION();
-
-    const auto& content_library_node = std::dynamic_pointer_cast<Content_library_node   >(item_in);
-    const auto& item                 = (content_library_node && content_library_node->item) ? content_library_node->item : item_in;
-
-    if (!item) {
-        return;
-    }
-
-    std::string group_label = fmt::format("{} {}", item->get_type_name().data(), item->get_name());
-    m_property_editor.push_group(group_label.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
-    {
-        std::string label_name = fmt::format("{} Name", item->get_type_name());
-        m_property_editor.add_entry(label_name, [item]() {
-            std::string name = item->get_name();
-            const bool enter_pressed = ImGui::InputText("##", &name, ImGuiInputTextFlags_EnterReturnsTrue);
-            if (enter_pressed || ImGui::IsItemDeactivatedAfterEdit()) { // TODO
-                if (name != item->get_name()) {
-                    item->set_name(name);
-                }
-            }
-        });
-
-        m_property_editor.add_entry("Id", [item]() { ImGui::Text("%u", static_cast<unsigned int>(item->get_id())); });
-
-        item_flags(item);
-    }
-
-    //if (texture) {
-    //    texture_properties(texture);
-    // }
 
     m_property_editor.pop_group();
 }
@@ -203,6 +164,12 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
 
     m_property_editor.push_group("Wavefront", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed, 0.0f);
     m_property_editor.add_entry(
+        "Show",
+        [&ui_node]() {
+            ImGui::Checkbox("##", &ui_node.m_show_wavefront);
+        }
+    );
+    m_property_editor.add_entry(
         "Time offset",
         [&ui_node]() {
             std::size_t time_offset_ = ui_node.get_wavefront_time_offset();
@@ -236,13 +203,6 @@ void Node_properties_window::node_properties(Graph_node& ui_node)
         [&ui_node, node_editor]() {
             ImVec2 position = node_editor->GetNodePosition(ui_node.get_id());
             ImGui::DragFloat2("##", &position.x, 0.1f);
-        }
-    );
-    m_property_editor.add_entry(
-        "Opacity",
-        [this]() {
-            erhe::primitive::Material& material = m_context.node_convex_hull_visualization->get_material();
-            ImGui::SliderFloat("##", &material.opacity, 0.0f, 1.0f);
         }
     );
 
@@ -284,18 +244,6 @@ void Node_properties_window::imgui()
     ERHE_PROFILE_FUNCTION();
 
     m_property_editor.reset();
-
-
-#if 0
-    const auto& selection = m_context.selection->get_selection();
-    int id = 0;
-    for (const auto& item : selection) {
-        ImGui::PushID(id++);
-        ERHE_DEFER( ImGui::PopID(); );
-        ERHE_VERIFY(item);
-        item_properties(item);
-    }
-#endif
 
     const auto selected_graph_node = m_context.graph_window->get_selection().get<erhe::graph::Node>();
     if (selected_graph_node) {

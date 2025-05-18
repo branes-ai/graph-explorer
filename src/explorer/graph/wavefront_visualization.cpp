@@ -1,4 +1,6 @@
 #include "graph/wavefront_visualization.hpp"
+#include "graph/timeline_window.hpp"
+#include "graph/node_convex_hull_visualization.hpp"
 #include "explorer_log.hpp"
 #include "explorer_context.hpp"
 #include "explorer_message_bus.hpp"
@@ -14,6 +16,7 @@
 #include "erhe_imgui/imgui_windows.hpp"
 #include "erhe_imgui/imgui_renderer.hpp"
 #include "erhe_math/math_util.hpp"
+#include "erhe_primitive/material.hpp"
 #include "erhe_scene/node.hpp"
 #include "erhe_scene_renderer/cube_instance_buffer.hpp"
 
@@ -115,47 +118,6 @@ void Wavefront_visualization::fetch_wavefront(Graph_node& graph_ui_node)
     );
 }
 
-auto Wavefront_visualization::check_for_selection_changes(Explorer_message& message) -> bool
-{
-    using namespace erhe::bit;
-
-    sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
-    if (dfg == nullptr) {
-        m_pending_update = true;
-        return false;
-    }
-
-    if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_selection)) {
-        for (const auto& item : message.no_longer_selected) {
-            std::shared_ptr<Graph_node> graph_ui_node = std::dynamic_pointer_cast<Graph_node>(item);
-            if (!graph_ui_node) {
-                continue;
-            }
-
-            std::size_t node_id = graph_ui_node->get_payload();
-            const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
-            if (!node.isOperator()) {
-                continue;
-            }
-            return true;
-        }
-
-        for (const auto& item : message.newly_selected) {
-            std::shared_ptr<Graph_node> graph_ui_node = std::dynamic_pointer_cast<Graph_node>(item);
-            if (!graph_ui_node) {
-                continue;
-            }
-            std::size_t node_id = graph_ui_node->get_payload();
-            const sw::dfa::DomainFlowNode& node = dfg->graph.node(node_id);
-            if (!node.isOperator()) {
-                continue;
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
 void Wavefront_visualization::update_wavefront_visualization()
 {
     sw::dfa::DomainFlowGraph* dfg = m_context.graph_window->get_domain_flow_graph();
@@ -164,25 +126,25 @@ void Wavefront_visualization::update_wavefront_visualization()
         return;
     }
 
-    Selection& selection = m_context.graph_window->get_selection();
-    std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
-    if (selected_graph_nodes.empty()) {
-        return;
+    Graph& ui_graph = m_context.graph_window->get_ui_graph();
+    const std::vector<erhe::graph::Node*>& nodes = ui_graph.get_nodes();
+    for (erhe::graph::Node* node : nodes) {
+        Graph_node* graph_ui_node = dynamic_cast<Graph_node*>(node);
+        if (graph_ui_node == nullptr) {
+            continue;
+        }
+        fetch_wavefront(*graph_ui_node);
     }
 
-    for (const std::shared_ptr<Graph_node>& graph_ui_node : selected_graph_nodes) {
-        fetch_wavefront(*graph_ui_node.get());
-    }
     m_pending_update = false;
 }
 
 void Wavefront_visualization::on_message(Explorer_message& message)
 {
-    if (!check_for_selection_changes(message)) {
-        return;
+    using namespace erhe::bit;
+    if (test_any_rhs_bits_set(message.update_flags, Message_flag_bit::c_flag_bit_graph_loaded)) {
+        update_wavefront_visualization();
     }
-
-    update_wavefront_visualization();
 }
 
 void Wavefront_visualization::imgui()
@@ -190,9 +152,12 @@ void Wavefront_visualization::imgui()
     Property_editor property_editor;
 
     property_editor.add_entry(
-        "Show", 
+        "Hull Opacity",
         [this]() {
-            ImGui::Checkbox("##show", &m_show);
+            erhe::primitive::Material* material = m_context.node_convex_hull_visualization->get_material();
+            if (material != nullptr) {
+                ImGui::SliderFloat("##", &material->opacity, 0.0f, 1.0f);
+            }
         }
     );
 
@@ -217,15 +182,31 @@ void Wavefront_visualization::imgui()
         }
     );
 
-    Selection& selection = m_context.graph_window->get_selection();
-    std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
-    if (selected_graph_nodes.empty()) {
-        return;
+    property_editor.show_entries();
+
+}
+
+void Wavefront_visualization::render(const Render_context& context)
+{
+    if (m_pending_update) {
+        update_wavefront_visualization();
     }
 
+    Selection& selection = m_context.graph_window->get_selection();
+    std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
+
     std::size_t first = std::numeric_limits<std::size_t>::max();
-    std::size_t last = std::numeric_limits<std::size_t>::lowest();
-    for (const std::shared_ptr<Graph_node>& graph_ui_node : selected_graph_nodes) {
+    std::size_t last  = std::numeric_limits<std::size_t>::lowest();
+    Graph& ui_graph = m_context.graph_window->get_ui_graph();
+    const std::vector<erhe::graph::Node*>& nodes = ui_graph.get_nodes();
+    for (erhe::graph::Node* node_ : nodes) {
+        Graph_node* graph_ui_node = dynamic_cast<Graph_node*>(node_);
+        if (graph_ui_node == nullptr) {
+            continue;
+        }
+        if (!graph_ui_node->show_wavefront()) {
+            continue;
+        }
         const std::vector<Wavefront_frame>& frames = graph_ui_node->wavefront_frames();
         if (frames.empty()) {
             continue;
@@ -235,35 +216,20 @@ void Wavefront_visualization::imgui()
         last  = std::max(first, frames.back ().time + time_offset);
     }
 
-    if (first < last) {
-        const int lo = static_cast<int>(first);
-        const int hi = static_cast<int>(last);
-        m_frame_index = std::clamp(m_frame_index, lo, hi);
-        property_editor.add_entry(
-            "Frame", 
-            [this, lo, hi]() {
-                ImGui::SliderInt("##frame", &m_frame_index, lo, hi, "%d");
-            }
-        );
-    }
+    std::size_t length = last - first + 1;
+    m_context.timeline_window->set_timeline_length(static_cast<float>(length));
+    m_frame_index = static_cast<int>(first) + static_cast<int>(m_context.timeline_window->get_play_position());
 
-    property_editor.show_entries();
+    for (erhe::graph::Node* node_ : nodes) {
+        Graph_node* graph_ui_node = dynamic_cast<Graph_node*>(node_);
+        if (graph_ui_node == nullptr) {
+            continue;
+        }
 
-}
+        if (!graph_ui_node->show_wavefront()) {
+            continue;
+        }
 
-void Wavefront_visualization::render(const Render_context& context)
-{
-    if (!m_show) {
-        return;
-    }
-
-    if (m_pending_update) {
-        update_wavefront_visualization();
-    }
-
-    Selection& selection = m_context.graph_window->get_selection();
-    std::vector<std::shared_ptr<Graph_node>> selected_graph_nodes = selection.get_all<Graph_node>();
-    for (const std::shared_ptr<Graph_node>& graph_ui_node : selected_graph_nodes) {
         const std::shared_ptr<erhe::scene::Node>& node   = graph_ui_node->get_index_space_node();
         const std::vector<Wavefront_frame>&       frames = graph_ui_node->wavefront_frames();
         if (!node || frames.empty()) {

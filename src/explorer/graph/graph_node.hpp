@@ -55,8 +55,10 @@ public:
     void set_convex_hull_visualization(const std::shared_ptr<erhe::scene::Node>& node, const glm::vec3& index_space_offset);
 
     [[nodiscard]] auto get_wavefront_time_offset() const -> int;
+    [[nodiscard]] auto show_wavefront() const -> bool;
     void set_wavefront_time_offset(int offset);
     void get_time_range(int& first, int& last) const;
+
 
     virtual void imgui();
 
@@ -91,6 +93,7 @@ protected:
     std::shared_ptr<erhe::scene::Node> m_index_space_node;
     int                                m_wavefront_time_offset{};
     std::vector<Wavefront_frame>       m_wavefront_frames;
+    bool                               m_show_wavefront{true};
 };
 
 } // namespace explorer

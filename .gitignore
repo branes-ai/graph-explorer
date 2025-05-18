@@ -11,6 +11,9 @@ src/editor/cache/bvh/*
 src/editor/windows/IconsMaterialDesignIcons.h
 src/editor/res/fonts/materialdesignicons-webfont.ttf
 src/editor/res/fonts/materialdesignicons.css
+src/explorer/res/fonts/materialdesignicons-webfont.ttf
+src/explorer/res/fonts/materialdesignicons.css
+src/explorer/windows/IconsMaterialDesignIcons.h
 !src/editor/cache/bvh/keep
 build
 cmake-build-debug

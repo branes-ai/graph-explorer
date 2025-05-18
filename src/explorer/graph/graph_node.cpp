@@ -66,6 +66,11 @@ auto Graph_node::get_wavefront_time_offset() const -> int
     return m_wavefront_time_offset;
 }
 
+auto Graph_node::show_wavefront() const -> bool
+{
+    return m_show_wavefront;
+}
+
 void Graph_node::get_time_range(int& first, int& last) const
 {
     if (m_wavefront_frames.empty()) {

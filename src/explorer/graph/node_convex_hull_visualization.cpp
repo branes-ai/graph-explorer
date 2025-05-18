@@ -270,9 +270,9 @@ auto Node_convex_hull_visualization::add_node_convex_hull(
     return scene_graph_node;
 }
 
-auto Node_convex_hull_visualization::get_material() -> erhe::primitive::Material&
+auto Node_convex_hull_visualization::get_material() -> erhe::primitive::Material*
 {
-    return *m_material.get();
+    return m_material.get();
 }
 
 void Node_convex_hull_visualization::render(const Render_context& context)

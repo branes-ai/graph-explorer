@@ -37,7 +37,7 @@ public:
     // Implements Renderable
     void render(const Render_context& context) override;
 
-    [[nodiscard]] auto get_material() -> erhe::primitive::Material&;
+    [[nodiscard]] auto get_material() -> erhe::primitive::Material*;
 
 private:
     void on_message                        (Explorer_message& message);

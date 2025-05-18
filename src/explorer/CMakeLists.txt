@@ -1,6 +1,31 @@
 set(_target "graph-explorer")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(${_target})
+
+# Icon font download and process
+find_package(Python3 COMPONENTS Interpreter)
+if (NOT ${Python3_FOUND})
+    message(FATAL_ERROR "Python3 is needed to generate sources.")
+endif ()
+set(ICON_FONT_MDI_DATA_URI  "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/css/materialdesignicons.css")
+set(ICON_FONT_MDI_DATA_FILE "${CMAKE_CURRENT_SOURCE_DIR}/res/fonts/materialdesignicons.css")
+set(ICON_FONT_MDI_TTF_URI   "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf")
+set(ICON_FONT_MDI_TTF_FILE  "${CMAKE_CURRENT_SOURCE_DIR}/res/fonts/materialdesignicons-webfont.ttf")
+if (NOT EXISTS ${ICON_FONT_MDI_DATA_FILE})
+    message(STATUS "Downloading Material Design Icons font .css...")
+    file(DOWNLOAD "${ICON_FONT_MDI_DATA_URI}" "${ICON_FONT_MDI_DATA_FILE}" SHOW_PROGRESS)
+endif()
+if (NOT EXISTS ${ICON_FONT_MDI_TTF_FILE})
+    message(STATUS "Downloading Material Design Icons font .ttf...")
+    file(DOWNLOAD "${ICON_FONT_MDI_TTF_URI}" "${ICON_FONT_MDI_TTF_FILE}" SHOW_PROGRESS)
+endif()
+message(STATUS "Running GenerateIconFontCppHeaders.py to generate MaterialDesignIcon font header file")
+execute_process(
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/GenerateIconFontCppHeaders.py"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 erhe_target_sources_grouped(
     ${_target} TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
     explorer.cpp
@@ -31,6 +56,8 @@ erhe_target_sources_grouped(
     graph/node_properties.hpp
     graph/node_convex_hull_visualization.cpp
     graph/node_convex_hull_visualization.hpp
+    graph/timeline_window.cpp
+    graph/timeline_window.hpp
     graph/wavefront_visualization.cpp
     graph/wavefront_visualization.hpp
     graphics/gradients.cpp
@@ -285,6 +312,8 @@ erhe_target_sources_grouped(
     windows/debug_view_window.hpp
     windows/imgui_window_scene_view_node.cpp
     windows/imgui_window_scene_view_node.hpp
+    windows/icon_browser.cpp
+    windows/icon_browser.hpp
     windows/item_tree_window.cpp
     windows/item_tree_window.hpp
     windows/layers_window.cpp
@@ -381,6 +410,7 @@ target_link_libraries(
     rapidjson
     Taskflow
 )
+
 if (${ERHE_GUI_LIBRARY} STREQUAL "imgui")
     target_link_libraries(${_target} PRIVATE imgui)
 endif ()

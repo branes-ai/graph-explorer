@@ -45,8 +45,6 @@ public:
 private:
     void on_message(Explorer_message& message);
 
-    [[nodiscard]] auto check_for_selection_changes(Explorer_message& message) -> bool;
-
     void update_wavefront_visualization();
     void fetch_wavefront               (Graph_node& graph_ui_node);
 
@@ -54,7 +52,6 @@ private:
     erhe::scene_renderer::Cube_renderer       m_cube_renderer;
     erhe::graphics::Vertex_input_state        m_empty_vertex_input;
     bool                                      m_pending_update{false};
-    bool                                      m_show          {true};
     int                                       m_frame_index   {0};
     float                                     m_cube_size     {0.4f};
     float                                     m_start_color[4];
