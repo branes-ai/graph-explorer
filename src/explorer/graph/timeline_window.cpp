@@ -148,6 +148,9 @@ void Timeline_window::imgui()
                 ImGui::SetTooltip("Paused - Press to play");
             }
             if (play) {
+                if (m_play_position == m_length) {
+                    m_play_position = 0.0f;
+                }
                 m_playing = true;
             }
         }
